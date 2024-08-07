@@ -50,6 +50,7 @@ func NewFromConfig(cfg Config) (Logger, error) {
 		Out:       out,
 		level:     cfg.Loglevel,
 		Formatter: formatter,
+		ExitFunc:  os.Exit,
 	}
 	return logger, nil
 }
