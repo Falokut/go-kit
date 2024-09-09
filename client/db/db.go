@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Falokut/go-kit/config"
 	"github.com/Falokut/go-kit/utils/cases"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -25,13 +26,13 @@ type Client struct {
 
 const defaultMaxOpenConn = 30
 
-func NewDB(ctx context.Context, cfg Config, opts ...Option) (*Client, error) {
+func NewDB(ctx context.Context, cfg config.Database, opts ...Option) (*Client, error) {
 	cli := &Client{}
 
 	for _, opt := range opts {
 		opt(cli)
 	}
-	
+
 	if cfg.Schema != "public" && cfg.Schema != "" {
 		err := createSchema(ctx, cfg)
 		if err != nil {
@@ -87,16 +88,13 @@ func open(ctx context.Context, connStr string) (*Client, error) {
 	return db, nil
 }
 
-func createSchema(ctx context.Context, cfg Config) error {
-	schema := cfg.Schema
-
-	cfg.Schema = ""
+func createSchema(ctx context.Context, cfg config.Database) error {
 	dbCli, err := open(ctx, cfg.ConnStr())
 	if err != nil {
 		return errors.WithMessage(err, "open db")
 	}
 
-	_, err = dbCli.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
+	_, err = dbCli.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", cfg.Schema))
 	if err != nil {
 		return errors.WithMessage(err, "exec query")
 	}
