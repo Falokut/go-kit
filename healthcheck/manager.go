@@ -41,7 +41,7 @@ func (m *Manager) Register(name string, toCheck HealthcheckFunc) {
 
 func (m *Manager) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	m.mu.RLock()
-	defer m.mu.Unlock()
+	defer m.mu.RUnlock()
 
 	ctx := log.ToContext(r.Context(), log.Any("action", "healthcheck"))
 	result := Result{}
