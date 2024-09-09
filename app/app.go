@@ -22,22 +22,22 @@ type Application struct {
 }
 
 func New() (*Application, error) {
-	var logCfg config.Log
-	err := config.Read(&logCfg)
+	var cfg config.Config
+	err := config.Read(&cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx, close := context.WithCancel(context.Background())
-	level, err := log.ParseLogLevel(logCfg.LogLevel)
+	level, err := log.ParseLogLevel(cfg.Log.LogLevel)
 	if err != nil {
 		panic(errors.WithMessage(err, "parse log level"))
 	}
 	logger, err := log.NewFromConfig(log.Config{
 		Loglevel: level,
 		Output: log.OutputConfig{
-			Console:  logCfg.ConsoleOutput,
-			Filepath: logCfg.Filepath,
+			Console:  cfg.Log.ConsoleOutput,
+			Filepath: cfg.Log.Filepath,
 		},
 	})
 	if err != nil {

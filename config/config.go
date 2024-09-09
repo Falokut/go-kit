@@ -8,6 +8,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Config struct {
+	Log Log `yaml:"log"`
+}
+
 func Read(ptr any) error {
 	cfgPath := getLocalConfigPath()
 	err := cleanenv.ReadConfig(cfgPath, ptr)
