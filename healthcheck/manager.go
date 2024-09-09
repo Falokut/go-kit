@@ -22,6 +22,7 @@ func NewHealthManager(logger log.Logger, listenPort string) Manager {
 	return Manager{
 		logger:     logger,
 		listenPort: listenPort,
+		toCheck:    make(map[string]HealthcheckFunc),
 		mu:         &sync.RWMutex{},
 	}
 }
