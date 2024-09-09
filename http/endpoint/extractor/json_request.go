@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/pkg/errors"
 	"github.com/Falokut/go-kit/http/apierrors"
 	"github.com/Falokut/go-kit/json"
+	"github.com/pkg/errors"
 )
 
 type JsonRequestExtractor struct {

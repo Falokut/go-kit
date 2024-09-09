@@ -1,7 +1,7 @@
 package maps
 
 /**
- * MergeMaps merges two maps of the same type into a new map. 
+ * MergeMaps merges two maps of the same type into a new map.
  * If m1 and m2 contain the same key, the value will be get from m2.
  *
  * Parameters:

@@ -1,6 +1,5 @@
 package extractor
 
-
 const (
 	MIMEApplicationXML  = "application/xml"
 	MIMETextXML         = "text/xml"

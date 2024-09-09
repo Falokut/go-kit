@@ -6,7 +6,6 @@ func ToSnakeCase(s string) string {
 	return ToDelimited(s, '_', "")
 }
 
-
 func ToDelimited(s string, delimiter uint8, ignore string) string {
 	s = strings.TrimSpace(s)
 	n := strings.Builder{}
@@ -14,7 +13,7 @@ func ToDelimited(s string, delimiter uint8, ignore string) string {
 	for i, v := range []byte(s) {
 		vIsCap := v >= 'A' && v <= 'Z'
 		vIsLow := v >= 'a' && v <= 'z'
-		if vIsCap{
+		if vIsCap {
 			v += 'a'
 			v -= 'A'
 		}

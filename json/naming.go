@@ -1,9 +1,9 @@
 package json
 
 import (
+	jsoniter "github.com/json-iterator/go"
 	"strings"
 	"unicode"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type namingExtension struct {

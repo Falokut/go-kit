@@ -3,8 +3,8 @@ package endpoint
 import (
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/Falokut/go-kit/json"
+	"github.com/pkg/errors"
 )
 
 type JsonResponseMapper struct {

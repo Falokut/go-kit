@@ -2,13 +2,13 @@ package http
 
 import (
 	"context"
+	"github.com/Falokut/go-kit/http/apierrors"
+	"github.com/Falokut/go-kit/log"
+	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	"sync/atomic"
 	"time"
-	"github.com/pkg/errors"
-	"github.com/Falokut/go-kit/http/apierrors"
-	"github.com/Falokut/go-kit/log"
 )
 
 type service struct {
@@ -33,6 +33,7 @@ func WithServer(server *http.Server) ServerOption {
 		srv.server = server
 	}
 }
+
 type Server struct {
 	server  *http.Server
 	service *service
