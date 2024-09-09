@@ -1,7 +1,9 @@
 package log
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -48,6 +50,24 @@ func (l Level) String() string {
 		return "TRACE"
 	}
 	return ""
+}
+
+func levelToFunc(logger Logger, lvl Level) (func(ctx context.Context, msg any, fields ...Field), error) {
+	switch lvl {
+	case DebugLevel:
+		return logger.Debug, nil
+	case InfoLevel:
+		return logger.Info, nil
+	case WarnLevel:
+		return logger.Warn, nil
+	case ErrorLevel:
+		return logger.Error, nil
+	case PanicLevel:
+		return logger.Panic, nil
+	case FatalLevel:
+		return logger.Fatal, nil
+	}
+	return nil, fmt.Errorf("unrecognized level: %q", lvl)
 }
 
 func ParseLogLevel(lvl string) (Level, error) {

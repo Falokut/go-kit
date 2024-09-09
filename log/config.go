@@ -3,6 +3,7 @@ package log
 import (
 	"errors"
 	"io"
+	stdlog "log"
 	"os"
 )
 
@@ -32,7 +33,27 @@ type JSONFormatterConfig struct {
 	DataKey           string
 }
 
-func NewFromConfig(cfg Config) (Logger, error) {
+func DefaultLoggerWithLevel(lvl Level) *Adapter {
+	formatter := &JSONFormatter{}
+	logger := &Adapter{
+		Out:       os.Stdout,
+		level:     lvl,
+		Formatter: formatter,
+		ExitFunc:  os.Exit,
+	}
+	return logger
+}
+
+func StdLoggerWithLevel(adapter Logger, level Level, withFields ...Field) *stdlog.Logger {
+	logFunc, err := levelToFunc(adapter, level)
+	if err != nil {
+		panic(err)
+	}
+	stdLogger := stdlog.New(&LoggerWriter{logFunc: logFunc}, "", 0)
+	return stdLogger
+}
+
+func NewFromConfig(cfg Config) (*Adapter, error) {
 	if cfg.Loglevel > TraceLevel {
 		return nil, errors.New("invalid log level")
 	}
@@ -91,8 +112,6 @@ func getFormatter(cfg FormatterConfig) (Formatter, error) {
 			DataKey:           cfg.Json.DataKey,
 		}, nil
 	default:
-		return &JSONFormatter{
-			PrettyPrint: false,
-		}, nil
+		return &JSONFormatter{}, nil
 	}
 }
