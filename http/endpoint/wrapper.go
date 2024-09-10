@@ -13,8 +13,8 @@ type HttpError interface {
 	WriteError(w http.ResponseWriter) error
 }
 
-type RequestBodyExtractor interface {
-	Extract(ctx context.Context, contentType string, r *http.Request, reqBodyType reflect.Type) (reflect.Value, error)
+type RequestBinder interface {
+	Bind(ctx context.Context, contentType string, r *http.Request, reqBodyType reflect.Type) (reflect.Value, error)
 }
 
 type ResponseBodyMapper interface {
@@ -29,16 +29,16 @@ type ParamMapper struct {
 }
 
 type Wrapper struct {
-	ParamMappers  map[string]ParamMapper
-	BodyExtractor RequestBodyExtractor
-	BodyMapper    ResponseBodyMapper
-	Middlewares   []http2.Middleware
-	Logger        log.Logger
+	ParamMappers map[string]ParamMapper
+	Binder       RequestBinder
+	BodyMapper   ResponseBodyMapper
+	Middlewares  []http2.Middleware
+	Logger       log.Logger
 }
 
 func NewWrapper(
 	paramMappers []ParamMapper,
-	bodyExtractor RequestBodyExtractor,
+	binder RequestBinder,
 	bodyMapper ResponseBodyMapper,
 	logger log.Logger,
 ) Wrapper {
@@ -47,15 +47,15 @@ func NewWrapper(
 		mappers[mapper.Type] = mapper
 	}
 	return Wrapper{
-		ParamMappers:  mappers,
-		BodyExtractor: bodyExtractor,
-		BodyMapper:    bodyMapper,
-		Logger:        logger,
+		ParamMappers: mappers,
+		Binder:       binder,
+		BodyMapper:   bodyMapper,
+		Logger:       logger,
 	}
 }
 
 func (m Wrapper) Endpoint(f any) http.HandlerFunc {
-	caller, err := NewCaller(f, m.BodyExtractor, m.BodyMapper, m.ParamMappers)
+	caller, err := NewCaller(f, m.Binder, m.BodyMapper, m.ParamMappers)
 	if err != nil {
 		panic(err)
 	}
@@ -75,11 +75,11 @@ func (m Wrapper) Endpoint(f any) http.HandlerFunc {
 
 func (m Wrapper) WithMiddlewares(middlewares ...http2.Middleware) Wrapper {
 	return Wrapper{
-		ParamMappers:  m.ParamMappers,
-		BodyExtractor: m.BodyExtractor,
-		BodyMapper:    m.BodyMapper,
-		Middlewares:   append(m.Middlewares, middlewares...),
-		Logger:        m.Logger,
+		ParamMappers: m.ParamMappers,
+		Binder:       m.Binder,
+		BodyMapper:   m.BodyMapper,
+		Middlewares:  append(m.Middlewares, middlewares...),
+		Logger:       m.Logger,
 	}
 
 }

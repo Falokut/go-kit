@@ -1,4 +1,4 @@
-package extractor
+package binder
 
 const (
 	MIMEApplicationXML  = "application/xml"

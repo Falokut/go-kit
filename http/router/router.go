@@ -36,6 +36,7 @@ func (r *Router) DELETE(path string, handler http.Handler) *Router {
 }
 
 func (r *Router) Handler(method string, path string, handler http.Handler) *Router {
+	r.router.Handler(method, path, handler)
 	return r
 }
 

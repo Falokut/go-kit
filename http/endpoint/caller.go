@@ -14,7 +14,7 @@ type param struct {
 }
 
 type Caller struct {
-	bodyExtractor RequestBodyExtractor
+	bodyExtractor RequestBinder
 	bodyMapper    ResponseBodyMapper
 
 	handler      reflect.Value
@@ -26,7 +26,7 @@ type Caller struct {
 
 func NewCaller(
 	f any,
-	bodyExtractor RequestBodyExtractor,
+	bodyExtractor RequestBinder,
 	bodyMapper ResponseBodyMapper,
 	paramMappers map[string]ParamMapper,
 ) (*Caller, error) {
@@ -73,7 +73,7 @@ func (h *Caller) Handle(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	if h.reqBodyIndex != -1 {
 		contentType := r.Header.Get("Content-Type")
-		value, err := h.bodyExtractor.Extract(ctx, contentType, r, h.reqBodyType)
+		value, err := h.bodyExtractor.Bind(ctx, contentType, r, h.reqBodyType)
 		if err != nil {
 			return err
 		}

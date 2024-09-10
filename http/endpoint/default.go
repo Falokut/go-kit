@@ -2,7 +2,7 @@ package endpoint
 
 import (
 	"github.com/Falokut/go-kit/http"
-	"github.com/Falokut/go-kit/http/endpoint/extractor"
+	"github.com/Falokut/go-kit/http/endpoint/binder"
 	"github.com/Falokut/go-kit/log"
 	"github.com/Falokut/go-kit/validator"
 )
@@ -25,7 +25,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 
 	return NewWrapper(
 		paramMappers,
-		extractor.NewRequestBodyExtractor(validator.Default),
+		binder.NewRequestBinder(validator.Default),
 		JsonResponseMapper{},
 		logger,
 	).WithMiddlewares(middlewares...)
