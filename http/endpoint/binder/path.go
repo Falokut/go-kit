@@ -13,6 +13,7 @@ const pathTag = "path"
 func bindPath(r *http.Request, dest any) error {
 	v := reflect.ValueOf(dest).Elem()
 	t := v.Type()
+	params := router.ParamsFromRequest(r)
 
 	for i := range t.NumField() {
 		field := t.Field(i)
@@ -32,7 +33,6 @@ func bindPath(r *http.Request, dest any) error {
 		if !ok {
 			pathParamName = cases.ToLowerCamelCase(fieldName)
 		}
-		params := router.ParamsFromRequest(r)
 		pathParam := params.ByName(pathParamName)
 		if pathParam == "" {
 			continue
