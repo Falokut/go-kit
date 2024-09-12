@@ -107,25 +107,22 @@ func Log(logger log.Logger, availableContentTypes []string) http2.Middleware {
 					return errors.WithMessage(err, "close request reader")
 				}
 				r.Body = buffer.NewRequestBody(buf.RequestBody())
-
-				requestLogFields = append(requestLogFields, log.Any("requestBody", buf.RequestBody()))
+				requestLogFields = append(requestLogFields, log.ByteString("requestBody", buf.RequestBody()))
 			}
 
 			logger.Debug(ctx, "http handler: request", requestLogFields...)
 
 			err := next(ctx, buf, r)
-
 			responseLogFields := []log.Field{
 				log.Any("statusCode", buf.StatusCode()),
 				log.Any("elapsedTimeMs", time.Since(now).Milliseconds()),
 			}
 			responseContentType := buf.Header().Get("Content-Type")
 			if matchContentType(responseContentType, availableContentTypes) {
-				responseLogFields = append(responseLogFields, log.Any("responseBody", buf.ResponseBody()))
+				responseLogFields = append(responseLogFields, log.ByteString("responseBody", buf.ResponseBody()))
 			}
 
 			logger.Debug(ctx, "http handler: response", responseLogFields...)
-
 			return err
 		}
 	}
