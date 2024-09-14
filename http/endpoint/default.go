@@ -16,6 +16,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 	middlewares := append(
 		[]http.Middleware{
 			MaxRequestBodySize(defaultMaxRequestBodySize),
+			RequestId(),
 			DefaultLog(logger),
 			ErrorHandler(logger),
 			Recovery(),

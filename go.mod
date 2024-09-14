@@ -1,6 +1,6 @@
 module github.com/Falokut/go-kit
 
-go 1.22
+go 1.23
 
 require (
 	github.com/go-playground/locales v0.14.1
@@ -19,6 +19,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

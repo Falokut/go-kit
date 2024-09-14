@@ -12,6 +12,7 @@ import (
 	"github.com/Falokut/go-kit/http/apierrors"
 	"github.com/Falokut/go-kit/http/endpoint/buffer"
 	"github.com/Falokut/go-kit/log"
+	requestid "github.com/Falokut/go-kit/requestId"
 
 	"github.com/pkg/errors"
 )
@@ -139,4 +140,20 @@ func matchContentType(contentType string, availableContentTypes []string) bool {
 		}
 	}
 	return false
+}
+
+func RequestId() http2.Middleware {
+	return func(next http2.HandlerFunc) http2.HandlerFunc {
+		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			requestId := r.Header.Get(requestid.RequestIdHeader)
+			if requestId == "" {
+				requestId = requestid.Next()
+			}
+
+			ctx = requestid.ToContext(ctx, requestId)
+			ctx = log.ToContext(ctx, log.Any("requestId", requestId))
+
+			return next(ctx, w, r)
+		}
+	}
 }

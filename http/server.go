@@ -60,7 +60,6 @@ func NewServer(logger log.Logger, opts ...ServerOption) *Server {
 	}
 
 	s.server.Handler = s.service
-
 	return s
 }
 
