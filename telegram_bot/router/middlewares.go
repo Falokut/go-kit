@@ -64,7 +64,7 @@ func Log(logger log.Logger) Middleware {
 				"bot response",
 				log.Any("start", start),
 				log.Any("stop", stop),
-				log.Any("durationMs", stop.Sub(stop).Milliseconds()),
+				log.Any("durationMs", stop.Sub(start).Milliseconds()),
 			)
 			if err != nil {
 				return nil, err
