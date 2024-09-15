@@ -444,15 +444,13 @@ func (bot *BotAPI) Serve(ctx context.Context, config UpdatesConfig) error {
 				time.Sleep(updatesRetryTimeout)
 				break
 			}
-			if resp == nil {
-				continue
-			}
-
-			err = bot.Send(resp)
-			if err != nil {
-				bot.logger.Error(ctx, "bot send failed", log.Any("error", err))
-				time.Sleep(updatesRetryTimeout)
-				break
+			if resp != nil {
+				err = bot.Send(resp)
+				if err != nil {
+					bot.logger.Error(ctx, "bot send failed", log.Any("error", err))
+					time.Sleep(updatesRetryTimeout)
+					break
+				}
 			}
 			config.Offset = update.UpdateId + 1
 		}
