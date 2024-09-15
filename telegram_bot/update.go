@@ -1,29 +1,33 @@
 package telegram_bot
 
 const (
-	MessageUpdateType                = "message"
-	EditedMessageUpdateType          = "edited_message"
-	ChannelPostUpdateType            = "channel_post"
-	EditedChannelPostUpdateType      = "edited_channel_post"
-	BusinessConnectionUpdateType     = "business_connection"
-	BusinessMessageUpdateType        = "business_message"
-	EditedBusinessMessageUpdateType  = "edited_business_message"
-	DeletedBusinessMessageUpdateType = "deleted_business_messages"
-	MessageReactionUpdateType        = "message_reaction"
-	MessageReactionCountUpdateType   = "message_reaction_count"
-	InlineQueryUpdateType            = "inline_query"
-	ChosenInlineResultUpdateType     = "chosen_inline_result"
-	CallbackQueryUpdateType          = "callback_query"
-	ShippingQueryUpdateType          = "shipping_query"
-	PreCheckoutQueryUpdateType       = "pre_checkout_query"
-	PurchasedPaidMediaUpdateType     = "purchased_paid_media"
-	PollUpdateType                   = "poll"
-	PollAnswerUpdateType             = "poll_answer"
-	MyChatMemberUpdateType           = "my_chat_member"
-	ChatMemberUpdateType             = "chat_member"
-	ChatJoinRequestUpdateType        = "chat_join_request"
-	ChatBoostUpdateType              = "chat_boost"
-	RemovedChatBoostUpdateType       = "removed_chat_boost"
+	MessageUpdateType                                = "message"
+	SuccessfulPaymentMessageUpdateType               = "successful_payment_message"
+	EditedMessageUpdateType                          = "edited_message"
+	SuccessfulPaymentEditedMessageUpdateType         = "successful_payment_edited_message"
+	ChannelPostUpdateType                            = "channel_post"
+	EditedChannelPostUpdateType                      = "edited_channel_post"
+	BusinessConnectionUpdateType                     = "business_connection"
+	BusinessMessageUpdateType                        = "business_message"
+	SuccessfulPaymentBusinessMessageUpdateType       = "successful_payment_business_message"
+	EditedBusinessMessageUpdateType                  = "edited_business_message"
+	SuccessfulPaymentEditedBusinessMessageUpdateType = "successful_payment_edited_business_message"
+	DeletedBusinessMessageUpdateType                 = "deleted_business_messages"
+	MessageReactionUpdateType                        = "message_reaction"
+	MessageReactionCountUpdateType                   = "message_reaction_count"
+	InlineQueryUpdateType                            = "inline_query"
+	ChosenInlineResultUpdateType                     = "chosen_inline_result"
+	CallbackQueryUpdateType                          = "callback_query"
+	ShippingQueryUpdateType                          = "shipping_query"
+	PreCheckoutQueryUpdateType                       = "pre_checkout_query"
+	PurchasedPaidMediaUpdateType                     = "purchased_paid_media"
+	PollUpdateType                                   = "poll"
+	PollAnswerUpdateType                             = "poll_answer"
+	MyChatMemberUpdateType                           = "my_chat_member"
+	ChatMemberUpdateType                             = "chat_member"
+	ChatJoinRequestUpdateType                        = "chat_join_request"
+	ChatBoostUpdateType                              = "chat_boost"
+	RemovedChatBoostUpdateType                       = "removed_chat_boost"
 )
 
 // UpdatesConfig contains information about a GetUpdates request.
@@ -189,8 +193,14 @@ func (u Update) GetCommand() string {
 func (u Update) UpdateType() string {
 	switch {
 	case u.Message != nil:
+		if u.Message.SuccessfulPayment != nil {
+			return SuccessfulPaymentMessageUpdateType
+		}
 		return MessageUpdateType
 	case u.EditedMessage != nil:
+		if u.EditedMessage.SuccessfulPayment != nil {
+			return SuccessfulPaymentEditedMessageUpdateType
+		}
 		return EditedMessageUpdateType
 	case u.ChannelPost != nil:
 		return ChannelPostUpdateType
@@ -199,8 +209,14 @@ func (u Update) UpdateType() string {
 	case u.BusinessConnection != nil:
 		return BusinessConnectionUpdateType
 	case u.BusinessMessage != nil:
+		if u.BusinessMessage.SuccessfulPayment != nil {
+			return SuccessfulPaymentBusinessMessageUpdateType
+		}
 		return BusinessMessageUpdateType
 	case u.EditedBusinessMessage != nil:
+		if u.EditedBusinessMessage.SuccessfulPayment != nil {
+			return SuccessfulPaymentEditedBusinessMessageUpdateType
+		}
 		return EditedBusinessMessageUpdateType
 	case u.DeletedBusinessMessage != nil:
 		return DeletedBusinessMessageUpdateType
