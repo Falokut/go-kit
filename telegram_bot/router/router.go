@@ -61,7 +61,7 @@ func (r *Router) Handle(ctx context.Context, msg telegram_bot.Update) (telegram_
 		if !strings.EqualFold(node.command, command) {
 			continue
 		}
-		handler := node.handler
+		handler = node.handler
 		for i := len(r.middlewares) - 1; i >= 0; i-- {
 			handler = r.middlewares[i](handler)
 		}
