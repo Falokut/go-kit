@@ -36,7 +36,6 @@ type HTTPClient interface {
 // BotAPI allows you to interact with the Telegram Bot API.
 type BotAPI struct {
 	Token       string `json:"token"`
-	Buffer      int    `json:"buffer"`
 	logger      log.Logger
 	Self        User       `json:"-"`
 	Client      HTTPClient `json:"-"`
@@ -71,7 +70,6 @@ func NewBotAPIWithClient(ctx context.Context,
 		Token:       token,
 		Client:      client,
 		logger:      logger,
-		Buffer:      100,
 		ctx:         ctx,
 		shutdownCh:  make(chan any),
 		apiEndpoint: apiEndpoint,
@@ -91,15 +89,6 @@ func NewBotAPIWithClient(ctx context.Context,
 // SetAPIEndpoint changes the Telegram Bot API endpoint used by the instance.
 func (bot *BotAPI) SetAPIEndpoint(apiEndpoint string) {
 	bot.apiEndpoint = apiEndpoint
-}
-func (bot *BotAPI) UpsertCommands(commands []SetMyCommandsConfig) error {
-	for i, commandsConfig := range commands {
-		err := bot.Send(commandsConfig)
-		if err != nil {
-			return errors.WithMessagef(err, "send [%d] commands config", i)
-		}
-	}
-	return nil
 }
 
 func (bot *BotAPI) Upgrade(mux Muxer) {
