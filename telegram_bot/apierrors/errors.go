@@ -2,7 +2,6 @@ package apierrors
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/Falokut/go-kit/log"
 	"github.com/Falokut/go-kit/telegram_bot"
@@ -17,9 +16,9 @@ type Error struct {
 	ErrorMessage string
 	Details      map[string]any
 
-	httpStatusCode int
-	cause          error
-	level          log.Level
+	cause    error
+	level    log.Level
+	internal bool
 }
 
 func NewInternalServiceError(err error) Error {
@@ -32,8 +31,8 @@ func NewBusinessError(errorCode int, errorMessage string, err error) Error {
 		WithLogLevel(log.WarnLevel)
 }
 
-func (e Error) BotError(chatId int64) telegram_bot.Chattable {
-	if e.httpStatusCode == http.StatusInternalServerError {
+func (e Error) BotResponse(chatId int64) telegram_bot.Chattable {
+	if e.internal || e.ErrorCode == ErrCodeInternal {
 		return nil
 	}
 	return telegram_bot.NewMessage(chatId, e.ErrorMessage)
@@ -48,6 +47,7 @@ func New(
 	return Error{
 		ErrorCode:    errorCode,
 		ErrorMessage: errorMessage,
+		internal:     internal,
 		cause:        err,
 		level:        log.ErrorLevel,
 	}
