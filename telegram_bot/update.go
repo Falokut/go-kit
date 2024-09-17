@@ -1,5 +1,7 @@
 package telegram_bot
 
+import "time"
+
 const (
 	MessageUpdateType                                = "message"
 	SuccessfulPaymentMessageUpdateType               = "successful_payment_message"
@@ -32,10 +34,12 @@ const (
 
 // UpdatesConfig contains information about a GetUpdates request.
 type UpdatesConfig struct {
-	Offset         int
-	Limit          int
-	Timeout        int
-	AllowedUpdates []string
+	Offset                int
+	Limit                 int
+	Timeout               int
+	AllowedUpdates        []string
+	MaxMuxErrorRetryCount int           `json:"-"` // -1 = infinity retry count
+	RetryDelay            time.Duration `json:"-"` // default = 3s, must be > 1s
 }
 
 func (UpdatesConfig) method() string {

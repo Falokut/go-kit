@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	updatesRetryTimeout = time.Second * 3
+	updatesRetryDelay = time.Second * 3
 )
 
 type Muxer interface {
@@ -398,6 +398,9 @@ func (bot *BotAPI) Serve(ctx context.Context, config UpdatesConfig) error {
 	if !ok {
 		return errors.New("bot serve error: muxer not initialized")
 	}
+	if config.RetryDelay < time.Second {
+		config.RetryDelay = updatesRetryDelay
+	}
 	ctx = log.ToContext(ctx, log.Any("accountName", bot.Self.UserName))
 	for {
 		select {
@@ -411,9 +414,9 @@ func (bot *BotAPI) Serve(ctx context.Context, config UpdatesConfig) error {
 		if err != nil {
 			bot.logger.Error(bot.ctx, "failed to get updates",
 				log.Any("error", err),
-				log.Any("retryAfter", time.Now().Add(updatesRetryTimeout)),
+				log.Any("retryAfter", time.Now().Add(updatesRetryDelay)),
 			)
-			time.Sleep(updatesRetryTimeout)
+			time.Sleep(updatesRetryDelay)
 			continue
 		}
 
@@ -421,23 +424,43 @@ func (bot *BotAPI) Serve(ctx context.Context, config UpdatesConfig) error {
 		err = json.Unmarshal(resp.Result, &updates)
 		if err != nil {
 			bot.logger.Error(bot.ctx, "failed to unmarshal updates", log.Any("error", err))
-			time.Sleep(updatesRetryTimeout)
+			time.Sleep(updatesRetryDelay)
 			continue
 		}
 		for _, update := range updates {
 			if update.UpdateId < config.Offset {
 				continue
 			}
-			resp, err := mux.Handle(ctx, update)
-			if err != nil {
-				time.Sleep(updatesRetryTimeout)
-				break
+			var resp Chattable
+			retry := 0
+			for {
+				resp, err = mux.Handle(ctx, update)
+				if err == nil {
+					break
+				}
+				if config.MaxMuxErrorRetryCount != -1 &&
+					retry >= config.MaxMuxErrorRetryCount {
+					bot.logger.Warn(ctx,
+						"mux handle error reached max retry count",
+						log.Any("error", err.Error()),
+						log.Any("retryAfter", time.Now().UTC().Add(config.RetryDelay)),
+						log.Any("retry", retry),
+						log.Any("maxRetryCount", config.MaxMuxErrorRetryCount),
+					)
+					break
+				}
+				retry++
+				time.Sleep(config.RetryDelay)
 			}
+
 			if resp != nil {
 				err = bot.Send(resp)
 				if err != nil {
-					bot.logger.Error(ctx, "bot send failed", log.Any("error", err))
-					time.Sleep(updatesRetryTimeout)
+					bot.logger.Error(ctx, "bot send failed",
+						log.Any("error", err),
+						log.Any("retryAfter", time.Now().UTC().Add(config.RetryDelay)),
+					)
+					time.Sleep(config.RetryDelay)
 					break
 				}
 			}
