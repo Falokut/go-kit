@@ -12,7 +12,7 @@ import (
 	"github.com/Falokut/go-kit/http/apierrors"
 	"github.com/Falokut/go-kit/http/endpoint/buffer"
 	"github.com/Falokut/go-kit/log"
-	requestid "github.com/Falokut/go-kit/requestId"
+	"github.com/Falokut/go-kit/requestid"
 
 	"github.com/pkg/errors"
 )

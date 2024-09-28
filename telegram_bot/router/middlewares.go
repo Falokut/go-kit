@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Falokut/go-kit/log"
-	requestid "github.com/Falokut/go-kit/requestId"
+	"github.com/Falokut/go-kit/requestid"
 	"github.com/Falokut/go-kit/telegram_bot"
 	"github.com/Falokut/go-kit/telegram_bot/apierrors"
 )
