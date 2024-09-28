@@ -8,7 +8,7 @@ import (
 	"github.com/Falokut/go-kit/telegram_bot"
 )
 
-func DefaultNotFoundHandler(_ context.Context, msg telegram_bot.Update) (telegram_bot.Chattable, error) {
+func NotFoundHandlerWithMessage(_ context.Context, msg telegram_bot.Update) (telegram_bot.Chattable, error) {
 	fromChat := msg.FromChat()
 	if fromChat == nil {
 		return nil, nil
@@ -19,6 +19,14 @@ func DefaultNotFoundHandler(_ context.Context, msg telegram_bot.Update) (telegra
 			msg.GetCommand(),
 		),
 	), nil
+}
+
+func DefaultNotFoundHandler(_ context.Context, msg telegram_bot.Update) (telegram_bot.Chattable, error) {
+	fromChat := msg.FromChat()
+	if fromChat == nil {
+		return nil, nil
+	}
+	return nil, nil
 }
 
 func DefaultMiddlewares(logger log.Logger) []Middleware {
