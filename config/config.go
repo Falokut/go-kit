@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Falokut/go-kit/validator"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/pkg/errors"
 )
@@ -13,13 +14,16 @@ type Config struct {
 }
 
 func Read(ptr any) error {
-	cfgPath := getLocalConfigPath()
-	err := cleanenv.ReadConfig(cfgPath, ptr)
+	return ReadConfig(ptr, getLocalConfigPath())
+}
+
+func ReadConfig(ptr any, configPath string) error {
+	err := cleanenv.ReadConfig(configPath, ptr)
 	if err != nil {
 		help, _ := cleanenv.GetDescription(ptr, nil)
 		return errors.WithMessage(err, help)
 	}
-	return nil
+	return validator.Default.ValidateToError(ptr)
 }
 
 func getLocalConfigPath() string {

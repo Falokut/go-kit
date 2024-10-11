@@ -26,7 +26,7 @@ func New(t *test.Test, opts ...db.Option) *TestDb {
 	schema := fmt.Sprintf("test_%s", t.Id()) //name must start from none digit
 	dbConfig := config.Database{
 		Host:        optionalEnvStr("PG_HOST", "127.0.0.1"),
-		Port:        optionalEnvUint32("PG_PORT", 5432),
+		Port:        optionalEnvInt("PG_PORT", 5432),
 		Database:    optionalEnvStr("PG_DB", "test"),
 		Username:    optionalEnvStr("PG_USER", "test"),
 		Password:    optionalEnvStr("PG_PASS", "test"),
@@ -115,14 +115,14 @@ func optionalEnvStr(name string, defaultVal string) string {
 	return defaultVal
 }
 
-func optionalEnvUint32(name string, defaultVal uint32) uint32 {
+func optionalEnvInt(name string, defaultVal int) int {
 	opt := os.Getenv(name)
 	if opt == "" {
 		return defaultVal
 	}
-	optVal, err := strconv.ParseUint(opt, 10, 32)
+	optVal, err := strconv.ParseInt(opt, 10, 64)
 	if err != nil {
 		return defaultVal
 	}
-	return uint32(optVal)
+	return int(optVal)
 }

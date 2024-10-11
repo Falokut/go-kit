@@ -6,11 +6,11 @@ import (
 )
 
 type Database struct {
-	Host        string `yaml:"host" env:"DATABASE_HOST" env-default:"localhost"`
-	Port        uint32 `yaml:"port" env:"DATABASE_PORT" env-default:"5432"`
-	Database    string `yaml:"database" env:"DATABASE_NAME" env-default:"postgres"`
-	Username    string `yaml:"username" env:"DATABASE_USERNAME" env-default:"postgres"`
-	Password    string `yaml:"password" env:"DATABASE_PASSWORD" env-default:"postgres"`
+	Host        string `yaml:"host" env:"DATABASE_HOST" env-default:"localhost" validate:"required,hostname|ip"`
+	Port        int    `yaml:"port" env:"DATABASE_PORT" env-default:"5432" validate:"required,gte=1024,lte=65535"`
+	Database    string `yaml:"database" env:"DATABASE_NAME" env-default:"postgres" validate:"required"`
+	Username    string `yaml:"username" env:"DATABASE_USERNAME" env-default:"postgres" validate:"required"`
+	Password    string `yaml:"password" env:"DATABASE_PASSWORD" env-default:"postgres" validate:"required"`
 	Schema      string `yaml:"schema" env:"DATABASE_SCHEMA"`
 	MaxOpenConn int    `yaml:"max_open_conn" env:"DATABASE_MAX_OPEN_CONN"`
 }
