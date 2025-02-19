@@ -17,6 +17,18 @@ require (
 )
 
 require (
+	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-ini/ini v1.67.0 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
+	github.com/minio/crc64nvme v1.0.0 // indirect
+	github.com/minio/md5-simd v1.1.2 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/rs/xid v1.6.0 // indirect
+)
+
+require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
@@ -30,16 +42,18 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/minio/minio-go v6.0.14+incompatible
+	github.com/minio/minio-go/v7 v7.0.86
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sethvargo/go-retry v0.2.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
