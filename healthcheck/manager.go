@@ -44,23 +44,25 @@ func (m *Manager) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	defer m.mu.RUnlock()
 
 	ctx := log.ToContext(r.Context(), log.Any("action", "healthcheck"))
-	result := Result{}
-	hasError := false
+	result := Result{
+		Status:      StatusPass,
+		FailDetails: make(map[string]any),
+	}
 	for resourceName, checkFn := range m.toCheck {
 		err := checkFn(ctx)
 		if err == nil {
 			continue
 		}
 		result.FailDetails[resourceName] = err
-		hasError = true
+		result.Status = StatusFail
 	}
 
 	w.Header().Set("Content-Type", "application/health+json")
-	if hasError {
+	if len(result.FailDetails) > 0 {
 		m.logger.Error(ctx, "healthcheck error", log.Any("failDetails", result.FailDetails))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
-	_ = json.NewEncoder(w).Encode(Result{Status: StatusPass})
+	_ = json.NewEncoder(w).Encode(result)
 }
