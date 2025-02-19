@@ -2,9 +2,9 @@ package client
 
 import (
 	"bytes"
+	"github.com/Falokut/go-kit/json"
 	"io"
 	"net/http"
-	"github.com/Falokut/go-kit/json"
 )
 
 type RequestBodyWriter interface {

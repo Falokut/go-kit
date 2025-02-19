@@ -5,9 +5,9 @@ import (
 )
 
 type GlobalRequestConfig struct {
-	Timeout   time.Duration
-	BaseUrl   string
-	Headers   map[string]string
+	Timeout time.Duration
+	BaseUrl string
+	Headers map[string]string
 }
 
 func NewGlobalRequestConfig() *GlobalRequestConfig {
