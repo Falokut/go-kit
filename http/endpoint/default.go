@@ -12,6 +12,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 		ContextParam(),
 		ResponseWriterParam(),
 		RequestParam(),
+		RangeParam(),
 	}
 	middlewares := append(
 		[]http.Middleware{

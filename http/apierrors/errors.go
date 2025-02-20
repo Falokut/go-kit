@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	ErrCodeInternal = 900
+	ErrCodeInvalidRange = 800
+	ErrCodeInternal     = 900
 )
 
 type Error struct {
