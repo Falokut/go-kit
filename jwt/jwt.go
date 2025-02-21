@@ -44,7 +44,7 @@ func ParseToken(tokenString string, secret string, dest JwtStoreValue) error {
 }
 
 func GenerateToken(secret string, tokenTTL time.Duration, value JwtStoreValue) (*TokenResponse, error) {
-	expiresAt := time.Now().Add(tokenTTL)
+	expiresAt := time.Now().UTC().Add(tokenTTL)
 	registeredClaims := jwt2.RegisteredClaims{
 		ExpiresAt: &jwt2.NumericDate{Time: expiresAt},
 		IssuedAt:  &jwt2.NumericDate{Time: time.Now().UTC()}}
