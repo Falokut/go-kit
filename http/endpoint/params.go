@@ -3,10 +3,8 @@ package endpoint
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	http2 "github.com/Falokut/go-kit/http"
-	"github.com/Falokut/go-kit/http/apierrors"
 	"github.com/Falokut/go-kit/http/types"
 	"github.com/pkg/errors"
 )
@@ -62,14 +60,12 @@ func BearerTokenParam() ParamMapper {
 	return ParamMapper{
 		Type: "types.BearerToken",
 		Builder: func(ctx context.Context, w http.ResponseWriter, r *http.Request) (any, error) {
-			token := r.Header.Get(http2.AuthorizationHeader)
-			tokenParts := strings.Split(token, " ")
-			if len(tokenParts) != 2 ||
-				tokenParts[0] != http2.BearerToken ||
-				tokenParts[1] == "" {
-				return types.BearerToken{}, apierrors.NewUnauthorizedError("invalid token")
+			token := types.BearerToken{}
+			err := token.FromRequestHeader(r)
+			if err != nil {
+				return nil, err
 			}
-			return types.BearerToken{Token: tokenParts[1]}, nil
+			return token, nil
 		},
 	}
 }
