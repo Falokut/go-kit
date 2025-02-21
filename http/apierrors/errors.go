@@ -12,6 +12,8 @@ import (
 const (
 	ErrCodeInvalidRange = 800
 	ErrCodeInternal     = 900
+	ErrCodeUnauthorized = 700
+	ErrCodeForbidden    = 701
 )
 
 type Error struct {
@@ -32,6 +34,18 @@ func NewInternalServiceError(err error) Error {
 func NewBusinessError(errorCode int, errorMessage string, err error) Error {
 	return New(http.StatusBadRequest, errorCode, errorMessage, err).
 		WithLogLevel(log.WarnLevel)
+}
+
+func NewForbiddenError(errorMsg string) Error {
+	return New(http.StatusForbidden, ErrCodeForbidden, errorMsg, errors.New(errorMsg))
+}
+
+func NewUnauthorizedError(errorMsg string) Error {
+	return New(http.StatusUnauthorized, ErrCodeUnauthorized, errorMsg, errors.New(errorMsg))
+}
+
+func NewRangeUnacceptableError(errorMsg string) Error {
+	return New(http.StatusRequestedRangeNotSatisfiable, ErrCodeInvalidRange, errorMsg, errors.New(errorMsg))
 }
 
 func New(

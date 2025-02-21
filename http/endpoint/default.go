@@ -13,6 +13,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 		ResponseWriterParam(),
 		RequestParam(),
 		RangeParam(),
+		BearerTokenParam(),
 	}
 	middlewares := append(
 		[]http.Middleware{
@@ -28,7 +29,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 	return NewWrapper(
 		paramMappers,
 		binder.NewRequestBinder(validator.Default),
-		JsonResponseMapper{},
+		TypeResponseMapper{},
 		logger,
 	).WithMiddlewares(middlewares...)
 }
