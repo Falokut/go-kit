@@ -29,7 +29,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 	return NewWrapper(
 		paramMappers,
 		binder.NewRequestBinder(validator.Default),
-		TypeResponseMapper{},
+		DefaultResponseMapper{},
 		logger,
 	).WithMiddlewares(middlewares...)
 }

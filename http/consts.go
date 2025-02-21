@@ -2,7 +2,12 @@ package http
 
 const (
 	AuthorizationHeader = "Authorization"
-	BearerToken         = "Bearer"
+	RangeHeader         = "Range"
+	ContentRangeHeader  = "Content-Range"
+	AcceptRangeHeader   = "Accept-Ranges"
+	ContentTypeHeader   = "Content-Type"
+	ContentLengthHeader = "Content-Length"
 
-	RangeHeader = "Range"
+	BearerToken = "Bearer"
+	BytesRange  = "bytes"
 )
