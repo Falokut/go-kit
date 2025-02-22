@@ -1,5 +1,0 @@
-host: 193.0.22.4
-port: 5432
-database: postgres
-username: user
-password: pass
