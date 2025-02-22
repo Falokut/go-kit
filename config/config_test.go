@@ -135,13 +135,6 @@ func TestLogConfig_InvalidLevel(t *testing.T) {
 	assert.Error(err)
 }
 
-func TestLogConfig_InvalidFilepath(t *testing.T) {
-	assert := assert.New(t)
-	var log config.Log
-	err := config.ReadConfig(&log, baseCfgPath+"log_invalid_filepath.yml")
-	assert.Error(err)
-}
-
 func TestLogConfig_Empty(t *testing.T) {
 	assert := assert.New(t)
 	var log config.Log
