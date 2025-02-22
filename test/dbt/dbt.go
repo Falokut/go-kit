@@ -66,7 +66,7 @@ func (db *TestDb) Schema() string {
 }
 
 func (db *TestDb) Close() error {
-	_, err := db.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", db.schema))
+	_, err := db.Exec(context.Background(), fmt.Sprintf("DROP SCHEMA %s CASCADE", db.schema))
 	if err != nil {
 		return errors.WithMessage(err, "drop schema")
 	}
