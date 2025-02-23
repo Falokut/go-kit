@@ -4,10 +4,19 @@ import (
 	"errors"
 	"fmt"
 	en_translations "github.com/Falokut/go-kit/validator/translations/en"
+	ru_translations "github.com/Falokut/go-kit/validator/translations/ru"
 	"github.com/go-playground/locales/en"
+	"github.com/go-playground/locales/ru"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	"strings"
+)
+
+type Language string
+
+const (
+	En Language = "en"
+	Ru Language = "ru"
 )
 
 type Adapter struct {
@@ -15,18 +24,35 @@ type Adapter struct {
 	translator ut.Translator
 }
 
-func New() Adapter {
-	enTranslator := en.New()
-	uni := ut.New(enTranslator, enTranslator)
-	translator, _ := uni.GetTranslator("en")
-	validator := validator.New()
-	err := en_translations.RegisterDefaultTranslations(validator, translator)
-	if err != nil {
-		panic(err)
-	}
-	return Adapter{
-		validator:  validator,
-		translator: translator,
+func New(lang Language) Adapter {
+	switch lang {
+	case Ru:
+		ruTranslator := ru.New()
+		uni := ut.New(ruTranslator, ruTranslator)
+		validator := validator.New()
+		translator, _ := uni.GetTranslator(string(lang))
+		err := ru_translations.RegisterDefaultTranslations(validator, translator)
+		if err != nil {
+			panic(err)
+		}
+		return Adapter{
+			validator:  validator,
+			translator: translator,
+		}
+	default:
+		lang = "en"
+		enTranslator := en.New()
+		uni := ut.New(enTranslator, enTranslator)
+		validator := validator.New()
+		translator, _ := uni.GetTranslator(string(lang))
+		err := en_translations.RegisterDefaultTranslations(validator, translator)
+		if err != nil {
+			panic(err)
+		}
+		return Adapter{
+			validator:  validator,
+			translator: translator,
+		}
 	}
 }
 

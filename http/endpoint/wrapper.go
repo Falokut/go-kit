@@ -6,7 +6,9 @@ import (
 	"reflect"
 
 	http2 "github.com/Falokut/go-kit/http"
+	"github.com/Falokut/go-kit/http/endpoint/binder"
 	"github.com/Falokut/go-kit/log"
+	"github.com/Falokut/go-kit/validator"
 )
 
 type HttpError interface {
@@ -82,4 +84,14 @@ func (m Wrapper) WithMiddlewares(middlewares ...http2.Middleware) Wrapper {
 		Logger:       m.Logger,
 	}
 
+}
+
+func (m Wrapper) WithValidator(validator validator.Adapter) Wrapper {
+	return Wrapper{
+		ParamMappers: m.ParamMappers,
+		Binder:       binder.NewRequestBinder(validator),
+		BodyMapper:   m.BodyMapper,
+		Middlewares:  m.Middlewares,
+		Logger:       m.Logger,
+	}
 }

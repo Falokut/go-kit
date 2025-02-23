@@ -1,5 +1,5 @@
 package validator
 
 var (
-	Default = New()
+	Default = New(Ru)
 )
