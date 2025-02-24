@@ -7,7 +7,7 @@ import (
 	"github.com/Falokut/go-kit/validator"
 )
 
-func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapper {
+func DefaultWrapper(logger log.Logger, logMiddleware LogMiddleware, restMiddlewares ...http.Middleware) Wrapper {
 	paramMappers := []ParamMapper{
 		ContextParam(),
 		ResponseWriterParam(),
@@ -19,7 +19,7 @@ func DefaultWrapper(logger log.Logger, restMiddlewares ...http.Middleware) Wrapp
 		[]http.Middleware{
 			MaxRequestBodySize(defaultMaxRequestBodySize),
 			RequestId(),
-			DefaultLog(logger),
+			http.Middleware(logMiddleware),
 			ErrorHandler(logger),
 			Recovery(),
 		},
