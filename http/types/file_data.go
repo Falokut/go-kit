@@ -5,45 +5,63 @@ import (
 	"io"
 	"net/http"
 
-	http2 "github.com/Falokut/go-kit/http"
 	"github.com/pkg/errors"
 )
 
 type PartialDataInfo struct {
 	RangeStartByte int64
 	RangeEndByte   int64
-	TotalDataSize  int64
 }
 
 type FileData struct {
 	PartialDataInfo *PartialDataInfo
 	ContentType     string
 	TotalFileSize   int64
-	ContentReader   io.Reader
+	ContentReader   io.ReadSeekCloser
 }
 
 func (file FileData) Write(w http.ResponseWriter) error {
-	w.Header().Set(http2.ContentTypeHeader, file.ContentType)
-	partialInfo := file.PartialDataInfo
-	if partialInfo != nil {
-		endByte := partialInfo.RangeEndByte
-		if endByte >= file.TotalFileSize {
-			endByte = file.TotalFileSize - 1
-		}
-		w.Header().Set(http2.ContentRangeHeader,
-			fmt.Sprintf("%s %d-%d/%d",
-				http2.BytesRange,
-				partialInfo.RangeStartByte,
-				endByte,
-				file.TotalFileSize,
-			),
-		)
-		w.Header().Set(http2.AcceptRangeHeader, http2.BytesRange)
-		w.WriteHeader(http.StatusPartialContent)
+	defer file.ContentReader.Close()
+	if file.PartialDataInfo != nil {
+		return file.writePartialData(w)
 	}
+
+	w.Header().Set("Content-Type", file.ContentType)
+	w.WriteHeader(http.StatusOK)
+
 	_, err := io.Copy(w, file.ContentReader)
 	if err != nil {
-		return errors.WithMessage(err, "copy from content reader")
+		return errors.WithMessage(err, "error during content copying")
 	}
+	return nil
+}
+
+func (file FileData) writePartialData(w http.ResponseWriter) error {
+	partialInfo := file.PartialDataInfo
+	startByte := partialInfo.RangeStartByte
+	endByte := partialInfo.RangeEndByte
+
+	if endByte == 0 || endByte >= file.TotalFileSize {
+		endByte = file.TotalFileSize - 1
+	}
+
+	contentLength := endByte - startByte + 1
+
+	w.Header().Set("Content-Type", file.ContentType)
+	w.Header().Set("Accept-Ranges", "bytes")
+	w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", startByte, endByte, file.TotalFileSize))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", contentLength))
+	w.WriteHeader(http.StatusPartialContent)
+
+	_, err := file.ContentReader.Seek(int64(startByte), io.SeekStart)
+	if err != nil {
+		return errors.WithMessage(err, "failed to seek start byte")
+	}
+
+	_, err = io.CopyN(w, file.ContentReader, int64(contentLength))
+	if err != nil {
+		return errors.WithMessage(err, "error during content copying")
+	}
+
 	return nil
 }

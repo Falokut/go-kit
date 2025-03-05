@@ -1,3 +1,5 @@
+## v1.3.2
+* Исправлена некорректная работа `http/types.file_data` при обработке partialData
 ## v1.3.1
 * Обновлён `http/types.file_data`, теперь вместо `[]byte` используется `io.Reader`
 ## v1.3.0
