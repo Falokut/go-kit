@@ -1,16 +1,14 @@
+// nolint:mnd
 package dbt
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"runtime"
-	"strconv"
 	"time"
 
-	"github.com/Falokut/go-kit/client/db"
-	"github.com/Falokut/go-kit/config"
+	"github.com/Falokut/go-kit/db"
 	"github.com/Falokut/go-kit/test"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -23,41 +21,46 @@ type TestDb struct {
 }
 
 func New(t *test.Test, opts ...db.Option) *TestDb {
-	schema := fmt.Sprintf("test_%s", t.Id()) //name must start from none digit
-	dbConfig := config.Database{
-		Host:        optionalEnvStr("PG_HOST", "127.0.0.1"),
-		Port:        optionalEnvInt("PG_PORT", 5432),
-		Database:    optionalEnvStr("PG_DB", "test"),
-		Username:    optionalEnvStr("PG_USER", "test"),
-		Password:    optionalEnvStr("PG_PASS", "test"),
-		Schema:      schema,
-		MaxOpenConn: runtime.NumCPU(),
-	}
+	dbConfig := Config(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cli, err := db.NewDB(ctx, dbConfig, opts...)
-	t.Assert().NoError(err, errors.WithMessagef(err, "open test db cli, schema: %s", schema))
+	cli, err := db.Open(ctx, dbConfig, opts...)
+	t.Assert().NoError(err, "open test db cli, schema: %s", dbConfig.Schema)
 
 	db := &TestDb{
 		Client: cli,
-		schema: schema,
+		schema: dbConfig.Schema,
 		must: must{
 			db:     cli,
 			assert: t.Assert(),
 		},
 	}
 	t.T().Cleanup(func() {
-		err := db.Close()
-		t.Assert().NoError(err)
+		_ = db.Close()
 	})
 	return db
+}
+
+func Config(t *test.Test) db.Config {
+	cfg := t.Config()
+	schema := fmt.Sprintf("test_%s", t.Id())
+	dbConfig := db.Config{
+		Host:        cfg.Optional().String("PG_HOST", "127.0.0.1"),
+		Port:        cfg.Optional().Int("PG_PORT", 5432),
+		Database:    cfg.Optional().String("PG_DB", "test"),
+		Username:    cfg.Optional().String("PG_USER", "test"),
+		Password:    cfg.Optional().String("PG_PASS", "test"),
+		Schema:      schema,
+		MaxOpenConn: runtime.NumCPU(),
+	}
+	return dbConfig
 }
 
 func (db *TestDb) DB() (*db.Client, error) {
 	return db.Client, nil
 }
 
-func (db *TestDb) Must() must { //for test purposes
+func (db *TestDb) Must() must { // for test purposes
 	return db.must
 }
 
@@ -66,7 +69,7 @@ func (db *TestDb) Schema() string {
 }
 
 func (db *TestDb) Close() error {
-	_, err := db.Exec(context.Background(), fmt.Sprintf("DROP SCHEMA %s CASCADE", db.schema))
+	_, err := db.Exec(context.Background(), fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE;", db.schema))
 	if err != nil {
 		return errors.WithMessage(err, "drop schema")
 	}
@@ -105,24 +108,4 @@ func (m must) Count(ctx context.Context, query string, args ...any) int {
 	value := 0
 	m.SelectRow(ctx, &value, query, args...)
 	return value
-}
-
-func optionalEnvStr(name string, defaultVal string) string {
-	opt := os.Getenv(name)
-	if opt != "" {
-		return opt
-	}
-	return defaultVal
-}
-
-func optionalEnvInt(name string, defaultVal int) int {
-	opt := os.Getenv(name)
-	if opt == "" {
-		return defaultVal
-	}
-	optVal, err := strconv.ParseInt(opt, 10, 64)
-	if err != nil {
-		return defaultVal
-	}
-	return int(optVal)
 }

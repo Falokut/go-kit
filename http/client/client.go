@@ -31,8 +31,9 @@ type Client struct {
 	roundTripper RoundTripper
 }
 
+// nolint:mnd,gochecknoglobals
 var (
-	StdClient = &http.Client{
+	stdClient = &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
@@ -61,7 +62,7 @@ func Default(opts ...Option) *Client {
 }
 
 func New(opts ...Option) *Client {
-	return NewWithClient(StdClient, opts...)
+	return NewWithClient(stdClient, opts...)
 }
 
 func NewWithClient(cli *http.Client, opts ...Option) *Client {
@@ -113,6 +114,12 @@ func (c *Client) execute(ctx context.Context, builder *RequestBuilder) (*Respons
 	for name, value := range builder.headers {
 		request.Header.Set(name, value)
 	}
+	for _, cookie := range builder.cookies {
+		request.AddCookie(cookie)
+	}
+	if builder.basicAuth != nil {
+		request.SetBasicAuth(builder.basicAuth.Username, builder.basicAuth.Password)
+	}
 	if builder.queryParams != nil {
 		values := url.Values{}
 		for key, value := range builder.queryParams {
@@ -155,6 +162,7 @@ func (c *Client) execute(ctx context.Context, builder *RequestBuilder) (*Respons
 	return resp, nil
 }
 
+// nolint:bodyclose
 func (c *Client) roundTrip(ctx context.Context, request *Request) (*Response, error) {
 	var (
 		cancel context.CancelFunc

@@ -1,39 +1,128 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
-	"github.com/Falokut/go-kit/validator"
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/Falokut/go-kit/utils/maps"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
 
+type Validator interface {
+	ValidateToError(value any) error
+}
+
 type Config struct {
-	Log Log `yaml:"log"`
+	config    map[string]string
+	optional  Optional
+	mandatory Mandatory
+
+	envPrefix    string
+	validator    Validator
+	extraSources []Source
 }
 
-func Read(ptr any) error {
-	return ReadConfig(ptr, getLocalConfigPath())
+func New(opts ...Option) (*Config, error) {
+	config := map[string]string{}
+	mandatory := Mandatory{config: config}
+	optional := Optional{m: mandatory}
+	cfg := &Config{
+		config:    config,
+		mandatory: mandatory,
+		optional:  optional,
+	}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	for _, source := range cfg.extraSources {
+		extraConfig, err := source.Config()
+		if err != nil {
+			return nil, errors.WithMessagef(err, "read extra source, %T", source)
+		}
+		for key, value := range extraConfig {
+			config[normalizeKey(key)] = value
+		}
+	}
+
+	for _, pairs := range os.Environ() {
+		parts := strings.Split(pairs, "=")
+		key := normalizeKey(parts[0])
+		prefix := normalizeKey(cfg.envPrefix)
+		if prefix != "" && !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		key = key[len(prefix):]
+		config[key] = strings.Join(parts[1:], "")
+	}
+
+	return cfg, nil
 }
 
-func ReadConfig(ptr any, configPath string) error {
-	err := cleanenv.ReadConfig(configPath, ptr)
+func (c *Config) Read(ptr any) error {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook:       mapstructure.ComposeDecodeHookFunc(mapstructure.StringToTimeDurationHookFunc()),
+		WeaklyTypedInput: true,
+		Result:           ptr,
+		Squash:           true,
+	})
 	if err != nil {
-		help, _ := cleanenv.GetDescription(ptr, nil)
-		return errors.WithMessage(err, help)
+		return errors.WithMessage(err, "mapstructure new decoder")
 	}
-	return validator.Default.ValidateToError(ptr)
+
+	expanded := make(map[string]any)
+	for key, value := range c.config {
+		expanded[key] = value
+	}
+	toDecode := maps.Expand(expanded)
+	err = decoder.Decode(toDecode)
+	if err != nil {
+		return errors.WithMessage(err, "decode config")
+	}
+
+	if c.validator != nil {
+		err := c.validator.ValidateToError(ptr)
+		if err != nil {
+			return errors.WithMessage(err, "validate config")
+		}
+	}
+
+	return nil
 }
 
-func getLocalConfigPath() string {
-	appMode := os.Getenv("APP_MODE")
-	if strings.EqualFold(appMode, "dev") {
-		return "conf/dev_config.yml"
+func (c *Config) Set(key string, value any) {
+	c.config[key] = fmt.Sprintf("%v", value)
+}
+
+func (c *Config) Delete(key string) {
+	delete(c.config, key)
+}
+
+func (c *Config) Mandatory() Mandatory {
+	return c.mandatory
+}
+
+func (c *Config) Optional() Optional {
+	return c.optional
+}
+
+func normalizeKey(key string) string {
+	return strings.ToLower(key)
+}
+
+// nolint:ireturn
+func get[T any](config map[string]string, key string, valueMapper func(value string) (T, error)) (T, error) {
+	var ret T
+	value, ok := config[normalizeKey(key)]
+	if !ok {
+		return ret, errors.Errorf("%s is expected in config", key)
 	}
-	cfgPath := os.Getenv("CONFIG_PATH")
-	if cfgPath != "" {
-		return cfgPath
+	mapped, err := valueMapper(value)
+	if err != nil {
+		return ret, err
 	}
-	return "conf/config.yml"
+
+	return mapped, nil
 }

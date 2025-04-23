@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/Falokut/go-kit/config"
 	"github.com/Falokut/go-kit/log"
 	"github.com/stretchr/testify/require"
 )
@@ -12,26 +13,38 @@ import (
 type Test struct {
 	id         string
 	t          *testing.T
-	logger     log.Logger
+	cfg        *config.Config
+	logger     *log.Adapter
 	assertions *require.Assertions
 }
 
 func New(t *testing.T) (*Test, *require.Assertions) {
-	assert := require.New(t)
-	logger := log.DefaultLoggerWithLevel(log.DebugLevel)
+	t.Helper()
 
-	idBytes := make([]byte, 4)
-	_, err := rand.Read(idBytes)
+	assert := require.New(t)
+	logger := log.New(log.WithLevel(log.DebugLevel), log.WithEncoder(log.JsonEncoder{}))
+
+	cfg, err := config.New()
 	assert.NoError(err)
+
+	idBytes := make([]byte, 4) // nolint:mnd
+	_, err = rand.Read(idBytes)
+	assert.NoError(err)
+
 	return &Test{
 		id:         hex.EncodeToString(idBytes),
 		t:          t,
+		cfg:        cfg,
 		logger:     logger,
 		assertions: assert,
 	}, assert
 }
 
-func (t *Test) Logger() log.Logger {
+func (t *Test) Config() *config.Config {
+	return t.cfg
+}
+
+func (t *Test) Logger() *log.Adapter {
 	return t.logger
 }
 

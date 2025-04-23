@@ -11,9 +11,10 @@ import (
 type RawMessage = json.RawMessage
 
 var (
-	instance = jsoniter.ConfigDefault
+	instance = jsoniter.ConfigDefault // nolint:gochecknoglobals
 )
 
+// nolint:gochecknoinits
 func init() {
 	timeType := reflect2.TypeByName("time.Time")
 	tc := NewTimeCodec(FullDateFormat)

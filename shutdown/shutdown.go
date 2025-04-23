@@ -6,9 +6,12 @@ import (
 	"syscall"
 )
 
-func On(do func()) {
+func On(do func()) chan os.Signal {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
-	do()
+	go func() {
+		<-ch
+		do()
+	}()
+	return ch
 }

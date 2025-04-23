@@ -1,13 +1,17 @@
+// nolint:err113
 package log
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 )
 
-type Level uint32
+var errUnmarshalNilLevel = errors.New("can't unmarshal a nil *Level")
+
+type Level uint32 // nolint:recvcheck
 
 // These are the different logging levels. You can set the logging level to log
 // on your instance of logger
@@ -54,6 +58,8 @@ func (l Level) String() string {
 
 func levelToFunc(logger Logger, lvl Level) (func(ctx context.Context, msg any, fields ...Field), error) {
 	switch lvl {
+	case TraceLevel:
+		return logger.Trace, nil
 	case DebugLevel:
 		return logger.Debug, nil
 	case InfoLevel:
@@ -88,4 +94,40 @@ func ParseLogLevel(lvl string) (Level, error) {
 		return TraceLevel, nil
 	}
 	return Level(0), errors.New("unknown log level")
+}
+
+// MarshalText marshals the Level to text. Note that the text representation
+// drops the -Level suffix (see example).
+func (l Level) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
+
+// UnmarshalText unmarshals text to a level. Like MarshalText, UnmarshalText
+// expects the text representation of a Level to drop the -Level suffix (see
+// example).
+//
+// In particular, this makes it easy to configure logging levels using YAML,
+// TOML, or JSON files.
+func (l *Level) UnmarshalText(text []byte) error {
+	if l == nil {
+		return errUnmarshalNilLevel
+	}
+	if !l.unmarshalText(text) && !l.unmarshalText(bytes.ToLower(text)) {
+		return fmt.Errorf("unrecognized level: %q", text)
+	}
+	return nil
+}
+
+func (l *Level) unmarshalText(text []byte) bool {
+	lvl, err := ParseLogLevel(string(text))
+	if err != nil {
+		return false
+	}
+	*l = lvl
+	return true
+}
+
+// Set sets the level for the flag.Value interface.
+func (l *Level) Set(s string) error {
+	return l.UnmarshalText([]byte(s))
 }

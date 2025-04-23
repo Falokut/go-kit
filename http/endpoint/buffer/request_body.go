@@ -14,7 +14,7 @@ func NewRequestBody(body []byte) RequestBody {
 	}
 }
 
-func (r RequestBody) Read(p []byte) (n int, err error) {
+func (r RequestBody) Read(p []byte) (int, error) {
 	return r.body.Read(p)
 }
 

@@ -25,13 +25,19 @@ type Adapter struct {
 }
 
 func New(lang Language) Adapter {
+	validator := validator.New()
+	err := registerCustomValidations(validator)
+	if err != nil {
+		panic(err)
+	}
+
+	// nolint:exhaustive
 	switch lang {
 	case Ru:
 		ruTranslator := ru.New()
 		uni := ut.New(ruTranslator, ruTranslator)
-		validator := validator.New()
 		translator, _ := uni.GetTranslator(string(lang))
-		err := ru_translations.RegisterDefaultTranslations(validator, translator)
+		err = ru_translations.RegisterDefaultTranslations(validator, translator)
 		if err != nil {
 			panic(err)
 		}
@@ -43,9 +49,8 @@ func New(lang Language) Adapter {
 		lang = "en"
 		enTranslator := en.New()
 		uni := ut.New(enTranslator, enTranslator)
-		validator := validator.New()
 		translator, _ := uni.GetTranslator(string(lang))
-		err := en_translations.RegisterDefaultTranslations(validator, translator)
+		err = en_translations.RegisterDefaultTranslations(validator, translator)
 		if err != nil {
 			panic(err)
 		}
@@ -60,12 +65,12 @@ type wrapper struct {
 	V any
 }
 
-func (a Adapter) Validate(v any) (ok bool, details map[string]string) {
-	err := a.validator.Struct(wrapper{v}) //hack
+func (a Adapter) Validate(v any) (bool, map[string]string) {
+	err := a.validator.Struct(wrapper{v}) // hack
 	if err == nil {
 		return true, nil
 	}
-	details, err = a.collectDetails(err)
+	details, err := a.collectDetails(err)
 	if err != nil {
 		return false, map[string]string{"#validator": err.Error()}
 	}
@@ -82,7 +87,7 @@ func (a Adapter) ValidateToError(v any) error {
 		descriptions = append(descriptions, fmt.Sprintf("%s -> %s", field, err))
 	}
 	err := strings.Join(descriptions, "; ")
-	return errors.New(err)
+	return errors.New(err) // nolint:err113
 }
 
 const (

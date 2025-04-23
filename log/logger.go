@@ -5,110 +5,85 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
+	"strconv"
 	"sync/atomic"
 	"time"
-
-	"github.com/Falokut/go-kit/utils/maps"
 )
 
-type Adapter struct {
-	Out          io.Writer
-	Formatter    Formatter
-	ReportCaller bool
-	level        Level
-	mu           MutexWrap
-	ExitFunc     exitFunc
+type Encoder interface {
+	Encode(field ...Field) ([]byte, error)
 }
 
 type exitFunc func(int)
 
-type MutexWrap struct {
-	lock     sync.Mutex
-	disabled bool
+type Adapter struct {
+	out               []io.Writer
+	encoder           Encoder
+	enableTimestamp   bool
+	deduplicateFields bool
+	timeNow           func() time.Time
+
+	level        *atomic.Uint32
+	reportCaller bool
+	exitFunc     exitFunc
 }
 
-func (mw *MutexWrap) Lock() {
-	if !mw.disabled {
-		mw.lock.Lock()
+func New(options ...Option) *Adapter {
+	a := Default()
+	for _, opt := range options {
+		opt(a)
+	}
+	return a
+}
+
+func Default() *Adapter {
+	level := &atomic.Uint32{}
+	level.Store(uint32(DebugLevel))
+	return &Adapter{
+		out:             []io.Writer{os.Stdout},
+		level:           level,
+		exitFunc:        os.Exit,
+		encoder:         JsonEncoder{},
+		enableTimestamp: true,
+		timeNow:         time.Now,
 	}
 }
 
-func (mw *MutexWrap) Unlock() {
-	if !mw.disabled {
-		mw.lock.Unlock()
-	}
+func (l *Adapter) Close() error {
+	return nil
 }
 
-func (mw *MutexWrap) Disable() {
-	mw.disabled = true
-}
-
-func (l *Adapter) log(level Level, msg string, data Fields) {
-	entry := &Entry{
-		ReportCaller: l.ReportCaller,
-		Data:         data,
-		Time:         time.Now(),
-		Level:        level,
-		Caller:       getCaller(),
-		Message:      msg,
-	}
-	l.write(entry)
-}
-
-func (l *Adapter) write(entry *Entry) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	serialized, err := l.Formatter.Format(entry)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to obtain reader, %v\n", err)
-		return
-	}
-	if _, err := l.Out.Write(serialized); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to write to log, %v\n", err)
-	}
+func (l *Adapter) SetLogLevel(lvl Level) {
+	l.level.Store(uint32(lvl))
 }
 
 func (l *Adapter) Level() Level {
-	return Level(atomic.LoadUint32((*uint32)(&l.level)))
+	return Level(l.level.Load())
 }
 
-// IsLevelEnabled checks if the log level of the logger is greater than the level param
 func (l *Adapter) IsLevelEnabled(level Level) bool {
-	return l.Level() >= level
-}
-
-// SetFormatter sets the logger formatter.
-func (logger *Adapter) SetFormatter(formatter Formatter) {
-	logger.mu.Lock()
-	defer logger.mu.Unlock()
-	logger.Formatter = formatter
-}
-
-// SetOutput sets the logger output.
-func (logger *Adapter) SetOutput(output io.Writer) {
-	logger.mu.Lock()
-	defer logger.mu.Unlock()
-	logger.Out = output
-}
-
-func (logger *Adapter) SetReportCaller(reportCaller bool) {
-	logger.mu.Lock()
-	defer logger.mu.Unlock()
-	logger.ReportCaller = reportCaller
+	return Level(l.level.Load()) >= level
 }
 
 // Log will log a message at the level given as parameter.
-// Warning: using Log at Panic or Fatal level will not respectively Panic nor Exit.
-// For this behaviour logger.Panic or logger.Fatal should be used instead.
 func (l *Adapter) Log(ctx context.Context, level Level, msg any, fields ...Field) {
-	if l.IsLevelEnabled(level) {
-		contextData := ContextLogValues(ctx)
-		fieldData := toFieldsMap(fields...)
-		data := maps.MergeMaps(contextData, fieldData)
-		l.log(level, fmt.Sprint(msg), data)
+	if !l.IsLevelEnabled(level) {
+		return
 	}
+
+	defaultLen := l.defaultFieldsLen(level)
+	ctxFields := ContextLogValues(ctx)
+	totalLen := defaultLen + len(ctxFields) + len(fields)
+
+	toWrite := make([]Field, 0, totalLen)
+	toWrite = l.appendDefaultFields(toWrite, level, msg)
+	toWrite = append(toWrite, ctxFields...)
+	toWrite = append(toWrite, fields...)
+
+	if l.deduplicateFields {
+		toWrite = deduplicateFields(toWrite)
+	}
+	l.write(toWrite...)
 }
 
 func (l *Adapter) Trace(ctx context.Context, msg any, fields ...Field) {
@@ -131,19 +106,62 @@ func (l *Adapter) Warn(ctx context.Context, msg any, fields ...Field) {
 	l.Log(ctx, WarnLevel, msg, fields...)
 }
 
-func (l *Adapter) Warning(ctx context.Context, msg any, fields ...Field) {
-	l.Warn(ctx, msg, fields...)
-}
-
 func (l *Adapter) Error(ctx context.Context, msg any, fields ...Field) {
 	l.Log(ctx, ErrorLevel, msg, fields...)
 }
 
 func (l *Adapter) Fatal(ctx context.Context, msg any, fields ...Field) {
 	l.Log(ctx, FatalLevel, msg, fields...)
-	l.ExitFunc(1)
+	l.exitFunc(1)
 }
 
 func (l *Adapter) Panic(ctx context.Context, msg any, fields ...Field) {
 	l.Log(ctx, PanicLevel, msg, fields...)
+}
+
+func (l *Adapter) defaultFieldsLen(level Level) int {
+	n := 2 // level + msg
+	if l.enableTimestamp {
+		n++
+	}
+	if l.reportCaller && level <= ErrorLevel {
+		n += 2 // func + file
+	}
+	return n
+}
+
+func (l *Adapter) appendDefaultFields(dst []Field, level Level, msg any) []Field {
+	if l.enableTimestamp {
+		dst = append(dst, Time(FieldKeyTime, l.timeNow()))
+	}
+	dst = append(dst, String(FieldKeyLevel, level.String()))
+	dst = append(dst, Any(FieldKeyMsg, msg))
+
+	if l.reportCaller && level <= ErrorLevel {
+		caller := getCaller()
+		if caller.Function != "" {
+			dst = append(dst, String(FieldKeyFunc, caller.Function))
+		}
+		if caller.File != "" {
+			buf := strconv.AppendInt([]byte(caller.File+":"), int64(caller.Line), 10) // nolint:mnd
+			dst = append(dst, String(FieldKeyFile, string(buf)))
+		}
+	}
+	return dst
+}
+
+func (l *Adapter) write(fields ...Field) {
+	serialized, err := l.encoder.Encode(fields...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to encode fields, %v\n", err)
+		return
+	}
+	serialized = append(serialized, '\n')
+
+	for _, out := range l.out {
+		_, err := out.Write(serialized)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to write to log, %v\n", err)
+		}
+	}
 }

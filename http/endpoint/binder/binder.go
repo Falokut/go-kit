@@ -1,3 +1,4 @@
+// nolint:wrapcheck
 package binder
 
 import (
@@ -23,8 +24,8 @@ type RequestBinder struct {
 	validator Validator
 }
 
-func NewRequestBinder(validator Validator) RequestBinder {
-	return RequestBinder{
+func NewRequestBinder(validator Validator) *RequestBinder {
+	return &RequestBinder{
 		validator: validator,
 	}
 }
@@ -44,7 +45,7 @@ func NewRequestBinder(validator Validator) RequestBinder {
  *   - reflect.Value: the reflect.Value of the bound data
  *   - error: an error if any binding or validation fails
  */
-func (b RequestBinder) Bind(ctx context.Context,
+func (b *RequestBinder) Bind(ctx context.Context,
 	ctype string,
 	r *http.Request,
 	destType reflect.Type,
@@ -135,17 +136,21 @@ func bindJson(reader io.Reader, dest reflect.Value) error {
 
 func bindXml(reader io.Reader, dest reflect.Value) error {
 	err := xml.NewDecoder(reader).Decode(dest.Interface())
-	if err == nil {
-		return nil
-	}
-	if ute, ok := err.(*xml.UnsupportedTypeError); ok {
+
+	var ute *xml.UnsupportedTypeError
+	var se *xml.SyntaxError
+	switch {
+	case errors.As(err, &ute):
 		return apierrors.NewBusinessError(http.StatusBadRequest,
 			fmt.Sprintf("Unsupported type error: type=%v, error=%v", ute.Type, ute.Error()), err)
-	} else if se, ok := err.(*xml.SyntaxError); ok {
+	case errors.As(err, &se):
 		return apierrors.NewBusinessError(http.StatusBadRequest,
 			fmt.Sprintf("Syntax error: line=%v, error=%v", se.Line, se.Error()), err)
+	case err != nil:
+		return apierrors.NewBusinessError(http.StatusBadRequest, err.Error(), err)
+	default:
+		return nil
 	}
-	return apierrors.NewBusinessError(http.StatusBadRequest, err.Error(), err)
 }
 
 func bindForm(r *http.Request, dest reflect.Value) error {
@@ -153,9 +158,5 @@ func bindForm(r *http.Request, dest reflect.Value) error {
 }
 
 func bindQuery(r *http.Request, dest reflect.Value) error {
-	err := bindData(r.URL.Query(), dest.Interface())
-	if err != nil {
-		return err
-	}
-	return nil
+	return bindData(r.URL.Query(), dest.Interface())
 }

@@ -6,11 +6,12 @@ import (
 	"github.com/Falokut/go-kit/utils/cases"
 )
 
+// nolint:gocognit,funlen
 func bindData(valuesMap map[string][]string, dest any) error {
 	v := reflect.ValueOf(dest).Elem()
 	t := v.Type()
 
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		field := t.Field(i)
 		fieldValue := v.Field(i)
 		fieldKind := fieldValue.Kind()
@@ -30,18 +31,18 @@ func bindData(valuesMap map[string][]string, dest any) error {
 		}
 
 		ok, err := unmarshalInputsToField(v.Kind(), values, fieldValue)
+		if err != nil {
+			return err
+		}
 		if ok {
-			if err != nil {
-				return err
-			}
 			continue
 		}
 
 		ok, err = unmarshalInputToField(v.Kind(), values[0], fieldValue)
+		if err != nil {
+			return err
+		}
 		if ok {
-			if err != nil {
-				return err
-			}
 			continue
 		}
 
@@ -54,8 +55,9 @@ func bindData(valuesMap map[string][]string, dest any) error {
 			sliceOf := fieldValue.Elem().Kind()
 			numElems := len(values)
 			slice := reflect.MakeSlice(field.Type, numElems, numElems)
-			for j := 0; j < numElems; j++ {
-				if err := setWithProperType(sliceOf, values[j], slice.Index(j)); err != nil {
+			for j := range numElems {
+				err := setWithProperType(sliceOf, values[j], slice.Index(j))
+				if err != nil {
 					return err
 				}
 			}
@@ -63,7 +65,8 @@ func bindData(valuesMap map[string][]string, dest any) error {
 			continue
 		}
 
-		if err := setWithProperType(fieldKind, values[0], fieldValue); err != nil {
+		err = setWithProperType(fieldKind, values[0], fieldValue)
+		if err != nil {
 			return err
 		}
 	}

@@ -16,7 +16,7 @@ type jsonRequest struct {
 }
 
 func (j jsonRequest) Write(req *http.Request, w io.Writer) error {
-	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	return json.EncodeInto(w, j.value)
 }
 

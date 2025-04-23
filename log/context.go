@@ -1,23 +1,24 @@
 package log
 
-import "context"
+import (
+	"context"
+)
 
 type logKey struct{}
 
 func ToContext(ctx context.Context, fields ...Field) context.Context {
-	oldFields := ContextLogValues(ctx)
-	newFields := make(Fields)
-	for k, v := range oldFields {
-		newFields[k] = v
-	}
-	for _, field := range fields {
-		newFields[field.Name] = field.Value
+	if len(fields) == 0 {
+		return ctx
 	}
 
-	return context.WithValue(ctx, logKey{}, newFields)
+	fields = append(fields, ContextLogValues(ctx)...)
+	return context.WithValue(ctx, logKey{}, fields)
 }
 
-func ContextLogValues(ctx context.Context) Fields {
-	fields, _ := ctx.Value(logKey{}).(Fields)
-	return fields
+func ContextLogValues(ctx context.Context) []Field {
+	fields, ok := ctx.Value(logKey{}).(*[]Field)
+	if !ok {
+		return nil
+	}
+	return *fields
 }

@@ -1,5 +1,5 @@
 package validator
 
 var (
-	Default = New(Ru)
+	Default = New(Ru) // nolint:gochecknoglobals
 )

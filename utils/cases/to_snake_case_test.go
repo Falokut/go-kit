@@ -6,6 +6,7 @@ import (
 )
 
 func toSnake(tb testing.TB) {
+	tb.Helper()
 	testCases := [][]string{
 		{"testCase", "test_case"},
 		{"TestCase", "test_case"},
@@ -43,13 +44,17 @@ func toSnake(tb testing.TB) {
 	}
 }
 
-func TestToSnake(t *testing.T) { toSnake(t) }
+func TestToSnake(t *testing.T) {
+	t.Parallel()
+	toSnake(t)
+}
 
 func BenchmarkToSnake(b *testing.B) {
 	benchmarkSnakeTest(b, toSnake)
 }
 
 func toDelimited(tb testing.TB) {
+	tb.Helper()
 	testCases := [][]string{
 		{"testCase", "test@case"},
 		{"TestCase", "test@case"},
@@ -80,14 +85,18 @@ func toDelimited(tb testing.TB) {
 	}
 }
 
-func TestToDelimited(t *testing.T) { toDelimited(t) }
+func TestToDelimited(t *testing.T) {
+	t.Parallel()
+	toDelimited(t)
+}
 
 func BenchmarkToDelimited(b *testing.B) {
 	benchmarkSnakeTest(b, toDelimited)
 }
 
 func benchmarkSnakeTest(b *testing.B, fn func(testing.TB)) {
-	for n := 0; n < b.N; n++ {
+	b.Helper()
+	for range b.N {
 		fn(b)
 	}
 }
