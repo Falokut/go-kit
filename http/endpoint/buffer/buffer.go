@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 type Buffer struct {
@@ -13,6 +15,7 @@ type Buffer struct {
 	statusCode     int
 }
 
+// nolint:mnd
 func New() *Buffer {
 	return &Buffer{
 		requestBuffer:  bytes.NewBuffer(make([]byte, 1024)),
@@ -30,12 +33,12 @@ func (m *Buffer) Reset(w http.ResponseWriter) {
 func (m *Buffer) Write(b []byte) (int, error) {
 	n, err := m.ResponseWriter.Write(b)
 	if err != nil {
-		return n, err
+		return n, errors.WithMessage(err, "write to response writer")
 	}
 
 	n, err = m.responseBuffer.Write(b)
 	if err != nil {
-		return 0, err
+		return 0, errors.WithMessage(err, "write to response buffer")
 	}
 
 	return n, nil

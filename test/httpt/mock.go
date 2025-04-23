@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/Falokut/go-kit/http/endpoint"
+	"github.com/Falokut/go-kit/http/endpoint/hlog"
 	"github.com/Falokut/go-kit/http/router"
 	"github.com/Falokut/go-kit/test"
 )
@@ -21,7 +22,7 @@ func NewMock(t *test.Test) *MockServer {
 	t.T().Cleanup(func() {
 		srv.Close()
 	})
-	wrapper := endpoint.DefaultWrapper(t.Logger(), endpoint.Log(t.Logger(), true, true))
+	wrapper := endpoint.DefaultWrapper(t.Logger(), hlog.Log(t.Logger(), true))
 	return &MockServer{
 		wrapper: wrapper,
 		srv:     srv,

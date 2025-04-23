@@ -4,6 +4,7 @@ import "context"
 
 type contextKey struct{}
 
+// nolint:gochecknoglobals
 var (
 	contextKeyValue = contextKey{}
 )

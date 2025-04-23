@@ -1,0 +1,15 @@
+configServiceAddresses: 
+  - 127.0.0.1:9001
+outerAddress:
+  ip: 127.0.0.1
+  port: 9003
+innerAddress:
+  ip: 0.0.0.0
+  port: 9003
+moduleName: test-service
+
+infraServerPort: 9553
+
+logfile:
+  path: some_file_path
+

@@ -53,12 +53,12 @@ func (file FileData) writePartialData(w http.ResponseWriter) error {
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", contentLength))
 	w.WriteHeader(http.StatusPartialContent)
 
-	_, err := file.ContentReader.Seek(int64(startByte), io.SeekStart)
+	_, err := file.ContentReader.Seek(startByte, io.SeekStart)
 	if err != nil {
 		return errors.WithMessage(err, "failed to seek start byte")
 	}
 
-	_, err = io.CopyN(w, file.ContentReader, int64(contentLength))
+	_, err = io.CopyN(w, file.ContentReader, contentLength)
 	if err != nil {
 		return errors.WithMessage(err, "error during content copying")
 	}

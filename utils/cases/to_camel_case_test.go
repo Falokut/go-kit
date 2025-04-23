@@ -7,6 +7,7 @@ import (
 )
 
 func toCamel(tb testing.TB) {
+	tb.Helper()
 	testCases := [][]string{
 		{"test_case", "TestCase"},
 		{"test.case", "TestCase"},
@@ -32,6 +33,7 @@ func toCamel(tb testing.TB) {
 }
 
 func TestToCamel(t *testing.T) {
+	t.Parallel()
 	toCamel(t)
 }
 
@@ -40,6 +42,7 @@ func BenchmarkToCamel(b *testing.B) {
 }
 
 func toLowerCamel(tb testing.TB) {
+	tb.Helper()
 	testCases := [][]string{
 		{"foo-bar", "fooBar"},
 		{"TestCase", "testCase"},
@@ -62,6 +65,7 @@ func toLowerCamel(tb testing.TB) {
 }
 
 func TestToLowerCamel(t *testing.T) {
+	t.Parallel()
 	toLowerCamel(t)
 }
 
@@ -70,7 +74,8 @@ func BenchmarkToLowerCamel(b *testing.B) {
 }
 
 func benchmarkCamelTest(b *testing.B, fn func(testing.TB)) {
-	for n := 0; n < b.N; n++ {
+	b.Helper()
+	for range b.N {
 		fn(b)
 	}
 }

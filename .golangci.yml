@@ -1,0 +1,59 @@
+run:
+  allow-parallel-runners: true
+issues:
+  exclude-rules:
+    - path: tg_bot
+      linters:
+        - ireturn
+        - unparam
+        - noctx
+    - path: tg_botx
+      linters:
+        - ireturn
+    - path: ds
+      linters:
+        - ireturn
+linters:
+  enable-all: true
+  disable:
+    - goimports
+    - wsl
+    - varnamelen
+    - exhaustruct
+    - contextcheck
+    - gci
+    - gofumpt
+    - nolintlint
+    - nlreturn
+    - godot
+    - godox
+    - depguard
+    - dupword
+    - tagalign
+    - tagliatelle
+    - musttag
+    - perfsprint
+    - wrapcheck
+    - usetesting
+    - tenv
+linters-settings:
+  funlen:
+    lines: 80
+  lll:
+    line-length: 150
+  cyclop:
+    max-complexity: 15 #по умолчанию 10 мало
+  revive:
+    rules:
+      - name: var-naming #отключаем Id -> ID
+        disabled: true
+  stylecheck:
+    checks: #отключаем Id -> ID
+      - "-ST1000"
+      - "-ST1016"
+      - "-ST1020"
+      - "-ST1021"
+      - "-ST1022"
+  testifylint:
+    disable:
+      - compares

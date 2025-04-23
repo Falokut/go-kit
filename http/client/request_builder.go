@@ -2,9 +2,12 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	libHttp "github.com/Falokut/go-kit/http"
 )
 
 type RequestBuilder struct {
@@ -12,6 +15,7 @@ type RequestBuilder struct {
 	url               string
 	baseUrl           string
 	headers           map[string]string
+	basicAuth         *BasicAuth
 	cookies           []*http.Cookie
 	requestBody       RequestBodyWriter
 	responseBody      ResponseBodyReader
@@ -22,7 +26,12 @@ type RequestBuilder struct {
 	execute func(ctx context.Context, req *RequestBuilder) (*Response, error)
 }
 
-func NewRequestBuilder(method string, url string, cfg *GlobalRequestConfig, execute func(ctx context.Context, req *RequestBuilder) (*Response, error)) *RequestBuilder {
+func NewRequestBuilder(
+	method string,
+	url string,
+	cfg *GlobalRequestConfig,
+	execute func(ctx context.Context, req *RequestBuilder) (*Response, error),
+) *RequestBuilder {
 	builder := &RequestBuilder{
 		method:  method,
 		url:     url,
@@ -32,11 +41,25 @@ func NewRequestBuilder(method string, url string, cfg *GlobalRequestConfig, exec
 	return builder
 }
 
+func (b *RequestBuilder) BaseUrl(baseUrl string) *RequestBuilder {
+	b.baseUrl = baseUrl
+	return b
+}
+
 func (b *RequestBuilder) Header(name string, value string) *RequestBuilder {
 	if b.headers == nil {
 		b.headers = map[string]string{}
 	}
 	b.headers[name] = value
+	return b
+}
+
+func (b *RequestBuilder) BearerAuth(token string) *RequestBuilder {
+	return b.Header(libHttp.AuthorizationHeader, fmt.Sprint(libHttp.BearerToken, " ", token))
+}
+
+func (b *RequestBuilder) BasicAuth(ba BasicAuth) *RequestBuilder {
+	b.basicAuth = &ba
 	return b
 }
 

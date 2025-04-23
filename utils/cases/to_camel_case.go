@@ -1,3 +1,4 @@
+// nolint
 package cases
 
 import (
@@ -18,29 +19,33 @@ func toCamelInitCase(s string, initCase bool) string {
 	for i, v := range []byte(s) {
 		vIsCap := v >= 'A' && v <= 'Z'
 		vIsLow := v >= 'a' && v <= 'z'
-		if capNext {
+
+		switch {
+		case capNext:
 			if vIsLow {
 				v += 'A'
 				v -= 'a'
 			}
-		} else if i == 0 {
+		case i == 0:
 			if vIsCap {
 				v += 'a'
 				v -= 'A'
 			}
-		} else if prevIsCap && vIsCap {
+		case prevIsCap && vIsCap:
 			v += 'a'
 			v -= 'A'
 		}
+
 		prevIsCap = vIsCap
 
-		if vIsCap || vIsLow {
+		switch {
+		case vIsCap || vIsLow:
 			n.WriteByte(v)
 			capNext = false
-		} else if vIsNum := v >= '0' && v <= '9'; vIsNum {
+		case v >= '0' && v <= '9':
 			n.WriteByte(v)
 			capNext = true
-		} else {
+		default:
 			capNext = v == '_' || v == ' ' || v == '-' || v == '.'
 		}
 	}

@@ -1,5 +1,7 @@
 package maps
 
+import "maps"
+
 /**
  * MergeMaps merges two maps of the same type into a new map.
  * If m1 and m2 contain the same key, the value will be get from m2.
@@ -16,11 +18,7 @@ func MergeMaps[T1 comparable, T2 any](m1 map[T1]T2, m2 map[T1]T2) map[T1]T2 {
 		return nil
 	}
 	res := make(map[T1]T2, len(m1)+len(m2))
-	for k, v := range m1 {
-		res[k] = v
-	}
-	for k, v := range m2 {
-		res[k] = v
-	}
+	maps.Copy(res, m1)
+	maps.Copy(res, m2)
 	return res
 }

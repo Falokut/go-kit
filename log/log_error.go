@@ -1,6 +1,8 @@
 package log
 
-import "context"
+import (
+	"context"
+)
 
 type LogLevelSpecifier interface {
 	LogLevel() Level
@@ -15,6 +17,7 @@ func LogLevelForError(err error) Level {
 	return logLevel
 }
 
+// nolint:exhaustive
 func LogLevelFuncForError(err error, logger Logger) func(ctx context.Context, message any, fields ...Field) {
 	logLevel := LogLevelForError(err)
 	switch logLevel {
@@ -26,6 +29,8 @@ func LogLevelFuncForError(err error, logger Logger) func(ctx context.Context, me
 		return logger.Info
 	case DebugLevel:
 		return logger.Debug
+	case TraceLevel:
+		return logger.Trace
 	default:
 		return logger.Error
 	}

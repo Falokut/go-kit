@@ -20,11 +20,13 @@ type bindMultipleUnmarshaler interface {
 	UnmarshalParams(params []string) error
 }
 
+// nolint:cyclop,mnd
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
 	if ok, err := unmarshalInputToField(valueKind, val, structField); ok {
 		return err
 	}
 
+	// nolint:exhaustive
 	switch valueKind {
 	case reflect.Ptr:
 		return setWithProperType(structField.Elem().Kind(), val, structField.Elem())
@@ -62,31 +64,23 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 	return nil
 }
 
+// nolint:wrapcheck
 func unmarshalInputsToField(valueKind reflect.Kind, values []string, field reflect.Value) (bool, error) {
-	if valueKind == reflect.Ptr {
-		if field.IsNil() {
-			field.Set(reflect.New(field.Type().Elem()))
-		}
-		field = field.Elem()
-	}
-
+	field = derefPointer(valueKind, field)
 	fieldIValue := field.Addr().Interface()
+
 	unmarshaler, ok := fieldIValue.(bindMultipleUnmarshaler)
-	if !ok {
-		return false, nil
+	if ok {
+		return true, unmarshaler.UnmarshalParams(values)
 	}
-	return true, unmarshaler.UnmarshalParams(values)
+	return false, nil
 }
 
+// nolint:wrapcheck
 func unmarshalInputToField(valueKind reflect.Kind, val string, field reflect.Value) (bool, error) {
-	if valueKind == reflect.Ptr {
-		if field.IsNil() {
-			field.Set(reflect.New(field.Type().Elem()))
-		}
-		field = field.Elem()
-	}
-
+	field = derefPointer(valueKind, field)
 	fieldIValue := field.Addr().Interface()
+
 	switch unmarshaler := fieldIValue.(type) {
 	case BindUnmarshaler:
 		return true, unmarshaler.UnmarshalParam(val)
@@ -97,14 +91,27 @@ func unmarshalInputToField(valueKind reflect.Kind, val string, field reflect.Val
 	return false, nil
 }
 
+func derefPointer(valueKind reflect.Kind, field reflect.Value) reflect.Value {
+	if valueKind == reflect.Ptr {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		field = field.Elem()
+	}
+	return field
+}
+
 func setIntField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0"
 	}
+
 	intVal, err := strconv.ParseInt(value, 10, bitSize)
-	if err == nil {
-		field.SetInt(intVal)
+	if err != nil {
+		return errors.WithMessage(err, "parse int")
 	}
+
+	field.SetInt(intVal)
 	return err
 }
 
@@ -112,31 +119,40 @@ func setUintField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0"
 	}
+
 	uintVal, err := strconv.ParseUint(value, 10, bitSize)
-	if err == nil {
-		field.SetUint(uintVal)
+	if err != nil {
+		return errors.WithMessage(err, "parse uint")
 	}
-	return err
+
+	field.SetUint(uintVal)
+	return nil
 }
 
 func setBoolField(value string, field reflect.Value) error {
 	if value == "" {
 		value = "false"
 	}
+
 	boolVal, err := strconv.ParseBool(value)
-	if err == nil {
-		field.SetBool(boolVal)
+	if err != nil {
+		return errors.WithMessage(err, "parse bool")
 	}
-	return err
+
+	field.SetBool(boolVal)
+	return nil
 }
 
 func setFloatField(value string, bitSize int, field reflect.Value) error {
 	if value == "" {
 		value = "0.0"
 	}
+
 	floatVal, err := strconv.ParseFloat(value, bitSize)
-	if err == nil {
-		field.SetFloat(floatVal)
+	if err != nil {
+		return errors.WithMessage(err, "parse float")
 	}
-	return err
+
+	field.SetFloat(floatVal)
+	return nil
 }

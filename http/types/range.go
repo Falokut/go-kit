@@ -8,6 +8,10 @@ import (
 	"github.com/Falokut/go-kit/http/apierrors"
 )
 
+var (
+	ErrInvalidRange = errors.New("invalid range: End must be greater than Start")
+)
+
 type RangeOption struct {
 	Start int64
 	End   int64
@@ -24,11 +28,12 @@ func (o *RangeOption) Length(objSize int64) (int64, error) {
 		length = o.End - o.Start + 1
 	}
 	if length <= 0 {
-		return -1, errors.New("invalid range: End must be greater than Start")
+		return -1, ErrInvalidRange
 	}
 	return length, nil
 }
 
+// nolint:cyclop,mnd
 func (o *RangeOption) FromHeader(header string) error {
 	if !strings.HasPrefix(header, "bytes=") {
 		return apierrors.NewRangeUnacceptableError("invalid range format")
