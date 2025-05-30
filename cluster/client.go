@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Falokut/go-kit/gocket"
 	"github.com/Falokut/go-kit/json"
+	"github.com/txix-open/etp/v4"
 
 	"github.com/Falokut/go-kit/lb"
 	"github.com/Falokut/go-kit/log"
@@ -109,7 +109,7 @@ func (c *Client) runSession(ctx context.Context, host string) error {
 		RequireRoutes:   c.eventHandler.routesReceiver != nil,
 	}
 
-	etpCli := gocket.NewClient(gocket.WithClientReadLimit(4 * 1024 * 1024))
+	etpCli := etp.NewClient(etp.WithClientReadLimit(4 * 1024 * 1024))
 	c.cli = newClientWrapper(ctx, etpCli, c.logger)
 
 	disconnectCh := c.subscribeToEvents()
@@ -167,7 +167,7 @@ func (c *Client) subscribeToEvents() chan error {
 	}
 
 	disconnectCh := make(chan error, 1)
-	c.cli.OnDisconnect(func(conn *gocket.Conn, err error) {
+	c.cli.OnDisconnect(func(conn *etp.Conn, err error) {
 		disconnectCh <- err
 	})
 
@@ -175,7 +175,7 @@ func (c *Client) subscribeToEvents() chan error {
 }
 
 func (c *Client) dialClientWrapper(ctx context.Context, host string) error {
-	connUrl, err := url.Parse(fmt.Sprintf("ws://%s/gocket/", host))
+	connUrl, err := url.Parse(fmt.Sprintf("ws://%s/isp-etp/", host))
 	if err != nil {
 		return errors.WithMessage(err, "parse conn url")
 	}

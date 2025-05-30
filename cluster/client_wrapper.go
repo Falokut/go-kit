@@ -5,7 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Falokut/go-kit/gocket"
+	"github.com/txix-open/etp/v4"
+	"github.com/txix-open/etp/v4/msg"
 
 	"github.com/Falokut/go-kit/json"
 	"github.com/Falokut/go-kit/log"
@@ -18,14 +19,14 @@ type eventFuture struct {
 }
 
 type clientWrapper struct {
-	cli          *gocket.Client
+	cli          *etp.Client
 	ctx          context.Context // nolint:containedctx
 	eventFutures sync.Map        // map[eventName]eventFuture
 	errorCh      chan []byte
 	logger       log.Logger
 }
 
-func newClientWrapper(ctx context.Context, cli *gocket.Client, logger log.Logger) *clientWrapper {
+func newClientWrapper(ctx context.Context, cli *etp.Client, logger log.Logger) *clientWrapper {
 	w := &clientWrapper{
 		cli:     cli,
 		ctx:     ctx,
@@ -36,11 +37,11 @@ func newClientWrapper(ctx context.Context, cli *gocket.Client, logger log.Logger
 	w.RegisterEvent(ErrorConnection, func(b []byte) error { w.errorCh <- b; return nil })
 	w.RegisterEvent(ConfigError, func(b []byte) error { w.errorCh <- b; return nil })
 
-	cli.OnUnknownEvent(gocket.HandlerFunc(func(ctx context.Context, conn *gocket.Conn, msg gocket.Message) []byte {
+	cli.OnUnknownEvent(etp.HandlerFunc(func(ctx context.Context, conn *etp.Conn, msg msg.Event) []byte {
 		logger.Error(
 			ctx,
 			"unexpected event from config service",
-			log.String("event", msg.Event),
+			log.String("event", msg.Name),
 			log.ByteString("data", msg.Data),
 		)
 		return nil
@@ -135,17 +136,17 @@ func (w *clientWrapper) Dial(ctx context.Context, url string) error {
 	return w.cli.Dial(ctx, url)
 }
 
-func (w *clientWrapper) OnDisconnect(handler gocket.DisconnectHandler) {
+func (w *clientWrapper) OnDisconnect(handler etp.DisconnectHandler) {
 	w.cli.OnDisconnect(handler)
 }
 
 func (w *clientWrapper) on(event string, handler func(data []byte)) {
-	w.cli.On(event, gocket.HandlerFunc(func(ctx context.Context, conn *gocket.Conn, msg gocket.Message) []byte {
+	w.cli.On(event, etp.HandlerFunc(func(ctx context.Context, conn *etp.Conn, msg msg.Event) []byte {
 		w.logger.Info(
 			w.ctx,
 			"event received",
-			log.String("event", msg.Event),
-			log.ByteString("data", hideSecrets(msg.Event, msg.Data)),
+			log.String("event", msg.Name),
+			log.ByteString("data", hideSecrets(msg.Name, msg.Data)),
 		)
 		handler(msg.Data)
 		return nil
