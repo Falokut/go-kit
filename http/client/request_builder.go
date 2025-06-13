@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
+	"net/url"
 	"time"
 
 	libHttp "github.com/Falokut/go-kit/http"
@@ -150,21 +150,22 @@ func (b *RequestBuilder) DoAndReadBody(ctx context.Context) ([]byte, int, error)
 }
 
 func (b *RequestBuilder) newHttpRequest(ctx context.Context) (*http.Request, error) {
-	targetUrl := b.baseUrl
-	if targetUrl == "" {
-		targetUrl = b.url
+	finalUrl := b.url
+	if b.baseUrl != "" {
+		base, err := url.Parse(b.baseUrl)
+		if err != nil {
+			return nil, fmt.Errorf("invalid baseUrl: %w", err)
+		}
+		endpoint, err := url.Parse(b.url)
+		if err != nil {
+			return nil, fmt.Errorf("invalid endpoint: %w", err)
+		}
+		finalUrl = base.ResolveReference(endpoint).String()
 	}
 
-	request, err := http.NewRequestWithContext(ctx, b.method, targetUrl, nil)
+	request, err := http.NewRequestWithContext(ctx, b.method, finalUrl, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if b.baseUrl != "" {
-		if !strings.HasSuffix(request.URL.Path, "/") {
-			request.URL.Path += "/"
-		}
-		request.URL = request.URL.JoinPath(b.url)
 	}
 
 	return request, nil
