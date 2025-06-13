@@ -2,12 +2,17 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"strings"
+	"net/url"
 	"time"
 
 	libHttp "github.com/Falokut/go-kit/http"
+)
+
+var (
+	ErrEmptyRequestUrl = errors.New("request url is empty")
 )
 
 type RequestBuilder struct {
@@ -150,22 +155,42 @@ func (b *RequestBuilder) DoAndReadBody(ctx context.Context) ([]byte, int, error)
 }
 
 func (b *RequestBuilder) newHttpRequest(ctx context.Context) (*http.Request, error) {
-	targetUrl := b.baseUrl
-	if targetUrl == "" {
-		targetUrl = b.url
-	}
-
-	request, err := http.NewRequestWithContext(ctx, b.method, targetUrl, nil)
+	finalUrl, err := b.GetRequestUrl()
 	if err != nil {
 		return nil, err
 	}
 
-	if b.baseUrl != "" {
-		if !strings.HasSuffix(request.URL.Path, "/") {
-			request.URL.Path += "/"
-		}
-		request.URL = request.URL.JoinPath(b.url)
+	request, err := http.NewRequestWithContext(ctx, b.method, finalUrl, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return request, nil
+}
+
+func (b *RequestBuilder) GetRequestUrl() (string, error) {
+	var finalUrl string
+
+	switch {
+	case b.baseUrl == "":
+		finalUrl = b.url
+	case b.url == "":
+		finalUrl = b.baseUrl
+	default:
+		base, err := url.Parse(b.baseUrl)
+		if err != nil {
+			return "", err
+		}
+		rel, err := url.Parse(b.url)
+		if err != nil {
+			return "", err
+		}
+		finalUrl = base.ResolveReference(rel).String()
+	}
+
+	if finalUrl == "" {
+		return "", ErrEmptyRequestUrl
+	}
+
+	return finalUrl, nil
 }
