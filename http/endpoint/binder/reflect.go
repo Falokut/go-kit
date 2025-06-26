@@ -21,84 +21,105 @@ type bindMultipleUnmarshaler interface {
 }
 
 // nolint:cyclop,mnd
-func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
-	if ok, err := unmarshalInputToField(valueKind, val, structField); ok {
-		return err
-	}
-
-	// nolint:exhaustive
-	switch valueKind {
-	case reflect.Ptr:
-		return setWithProperType(structField.Elem().Kind(), val, structField.Elem())
-	case reflect.Int:
-		return setIntField(val, 0, structField)
-	case reflect.Int8:
-		return setIntField(val, 8, structField)
-	case reflect.Int16:
-		return setIntField(val, 16, structField)
-	case reflect.Int32:
-		return setIntField(val, 32, structField)
-	case reflect.Int64:
-		return setIntField(val, 64, structField)
-	case reflect.Uint:
-		return setUintField(val, 0, structField)
-	case reflect.Uint8:
-		return setUintField(val, 8, structField)
-	case reflect.Uint16:
-		return setUintField(val, 16, structField)
-	case reflect.Uint32:
-		return setUintField(val, 32, structField)
-	case reflect.Uint64:
-		return setUintField(val, 64, structField)
-	case reflect.Bool:
-		return setBoolField(val, structField)
-	case reflect.Float32:
-		return setFloatField(val, 32, structField)
-	case reflect.Float64:
-		return setFloatField(val, 64, structField)
-	case reflect.String:
-		structField.SetString(val)
-	default:
-		return errors.New("unknown type")
-	}
-	return nil
-}
-
-// nolint:wrapcheck
-func unmarshalInputsToField(valueKind reflect.Kind, values []string, field reflect.Value) (bool, error) {
-	field = derefPointer(valueKind, field)
-	fieldIValue := field.Addr().Interface()
-
-	unmarshaler, ok := fieldIValue.(bindMultipleUnmarshaler)
-	if ok {
-		return true, unmarshaler.UnmarshalParams(values)
-	}
-	return false, nil
-}
-
-// nolint:wrapcheck
-func unmarshalInputToField(valueKind reflect.Kind, val string, field reflect.Value) (bool, error) {
-	field = derefPointer(valueKind, field)
-	fieldIValue := field.Addr().Interface()
-
-	switch unmarshaler := fieldIValue.(type) {
-	case BindUnmarshaler:
-		return true, unmarshaler.UnmarshalParam(val)
-	case encoding.TextUnmarshaler:
-		return true, unmarshaler.UnmarshalText([]byte(val))
-	}
-
-	return false, nil
-}
-
-func derefPointer(valueKind reflect.Kind, field reflect.Value) reflect.Value {
-	if valueKind == reflect.Ptr {
+func derefPointer(field reflect.Value) reflect.Value {
+	for field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			field.Set(reflect.New(field.Type().Elem()))
 		}
 		field = field.Elem()
 	}
 	return field
+}
+
+func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
+	structField = derefPointer(structField)
+	valueKind = structField.Kind()
+
+	switch valueKind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		var bitSize int
+		switch valueKind {
+		case reflect.Int8:
+			bitSize = 8
+		case reflect.Int16:
+			bitSize = 16
+		case reflect.Int32:
+			bitSize = 32
+		case reflect.Int64, reflect.Int:
+			bitSize = 64
+		}
+		return setIntField(val, bitSize, structField)
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		var bitSize int
+		switch valueKind {
+		case reflect.Uint8:
+			bitSize = 8
+		case reflect.Uint16:
+			bitSize = 16
+		case reflect.Uint32:
+			bitSize = 32
+		case reflect.Uint64, reflect.Uint:
+			bitSize = 64
+		}
+		return setUintField(val, bitSize, structField)
+
+	case reflect.Bool:
+		return setBoolField(val, structField)
+
+	case reflect.Float32, reflect.Float64:
+		bitSize := 32
+		if valueKind == reflect.Float64 {
+			bitSize = 64
+		}
+		return setFloatField(val, bitSize, structField)
+
+	case reflect.String:
+		structField.SetString(val)
+		return nil
+
+	default:
+		return errors.Errorf("unknown value type '%v'", valueKind)
+	}
+}
+
+// nolint:wrapcheck
+func unmarshalInputsToField(values []string, field reflect.Value) (bool, error) {
+	field = derefPointer(field)
+	fieldIValue := field.Addr().Interface()
+
+	unmarshaler, ok := fieldIValue.(bindMultipleUnmarshaler)
+	if ok {
+		err := unmarshaler.UnmarshalParams(values)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+// nolint:wrapcheck
+func unmarshalInputToField(val string, field reflect.Value) (bool, error) {
+	field = derefPointer(field)
+	fieldIValue := field.Addr().Interface()
+
+	switch unmarshaler := fieldIValue.(type) {
+	case BindUnmarshaler:
+		err := unmarshaler.UnmarshalParam(val)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	case encoding.TextUnmarshaler:
+		err := unmarshaler.UnmarshalText([]byte(val))
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func setIntField(value string, bitSize int, field reflect.Value) error {
@@ -108,11 +129,11 @@ func setIntField(value string, bitSize int, field reflect.Value) error {
 
 	intVal, err := strconv.ParseInt(value, 10, bitSize)
 	if err != nil {
-		return errors.WithMessage(err, "parse int")
+		return errors.Wrap(err, "unmarshal field")
 	}
 
 	field.SetInt(intVal)
-	return err
+	return nil
 }
 
 func setUintField(value string, bitSize int, field reflect.Value) error {

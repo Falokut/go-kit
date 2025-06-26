@@ -67,6 +67,10 @@ func (e Error) Error() string {
 	return fmt.Sprintf("errorCode: %d, errorMessage: %s, cause: %v", e.ErrorCode, e.ErrorMessage, e.cause)
 }
 
+func (e Error) HttpStatusCode() int {
+	return e.httpStatusCode
+}
+
 func (e Error) WriteError(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(e.httpStatusCode)

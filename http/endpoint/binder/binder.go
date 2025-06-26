@@ -37,7 +37,7 @@ func NewRequestBinder(validator Validator) *RequestBinder {
  *
  * Parameters:
  *   - ctx: the context of the request
- *   - ctype: the content type of the request body
+ *   - contentType: the content type of the request body
  *   - r: the incoming HTTP request
  *   - destType: the reflect.Type of the destination object
  *
@@ -45,8 +45,9 @@ func NewRequestBinder(validator Validator) *RequestBinder {
  *   - reflect.Value: the reflect.Value of the bound data
  *   - error: an error if any binding or validation fails
  */
-func (b *RequestBinder) Bind(ctx context.Context,
-	ctype string,
+func (b *RequestBinder) Bind(
+	ctx context.Context,
+	contentType string,
 	r *http.Request,
 	destType reflect.Type,
 ) (reflect.Value, error) {
@@ -59,13 +60,13 @@ func (b *RequestBinder) Bind(ctx context.Context,
 				apierrors.NewBusinessError(http.StatusBadRequest, "invalid request query", err)
 		}
 	}
-	err := bindPath(r, dest.Interface())
+	err := BindPath(r, dest.Interface())
 	if err != nil {
 		return reflect.Value{},
 			apierrors.NewBusinessError(http.StatusBadRequest, "invalid path params", err)
 	}
 
-	err = b.bindBody(ctype, r, dest)
+	err = b.BindBody(contentType, r, dest)
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -84,7 +85,7 @@ func (b *RequestBinder) Bind(ctx context.Context,
 }
 
 /**
- * bindBody binds the request body based on the content type.
+ * BindBody binds the request body based on the content type.
  * It supports binding for form data, JSON, and XML content types.
  *
  * Parameters:
@@ -94,18 +95,20 @@ func (b *RequestBinder) Bind(ctx context.Context,
  *
  * Returns an error if the binding process encounters any issues.
  */
-func (b *RequestBinder) bindBody(
-	ctype string,
+func (b *RequestBinder) BindBody(
+	contentType string,
 	r *http.Request,
 	dest reflect.Value,
 ) error {
 	var err error
 	switch {
-	case strings.HasPrefix(ctype, MIMEApplicationForm), strings.HasPrefix(ctype, MIMEMultipartForm):
+	case strings.HasPrefix(contentType, MIMEApplicationForm),
+		strings.HasPrefix(contentType, MIMEMultipartForm):
 		err = bindForm(r, dest)
-	case strings.HasPrefix(ctype, MIMEApplicationJSON):
+	case strings.HasPrefix(contentType, MIMEApplicationJSON):
 		err = bindJson(r.Body, dest)
-	case strings.HasPrefix(ctype, MIMEApplicationXML), strings.HasPrefix(ctype, MIMETextXML):
+	case strings.HasPrefix(contentType, MIMEApplicationXML),
+		strings.HasPrefix(contentType, MIMETextXML):
 		err = bindXml(r.Body, dest)
 	default:
 		return nil
@@ -154,9 +157,9 @@ func bindXml(reader io.Reader, dest reflect.Value) error {
 }
 
 func bindForm(r *http.Request, dest reflect.Value) error {
-	return bindData(r.Form, dest.Interface())
+	return BindData(r.Form, dest.Interface(), FormTag)
 }
 
 func bindQuery(r *http.Request, dest reflect.Value) error {
-	return bindData(r.URL.Query(), dest.Interface())
+	return BindData(r.URL.Query(), dest.Interface(), QueryTag)
 }
