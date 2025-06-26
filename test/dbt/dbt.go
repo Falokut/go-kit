@@ -22,8 +22,11 @@ type TestDb struct {
 
 func New(t *test.Test, opts ...db.Option) *TestDb {
 	dbConfig := Config(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.T().Context(), 5*time.Second)
 	defer cancel()
+	opts = append([]db.Option{
+		db.WithCreateSchema(true),
+	}, opts...)
 	cli, err := db.Open(ctx, dbConfig, opts...)
 	t.Assert().NoError(err, "open test db cli, schema: %s", dbConfig.Schema)
 

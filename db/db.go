@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/Falokut/go-kit/utils/cases"
@@ -22,26 +23,17 @@ type Client struct {
 	*sqlx.DB
 	queryTracers    tracers
 	migrationRunner MigrationRunner
+	createSchema    bool
 }
 
-const defaultMaxOpenConn = 30
+// nolint:gochecknoglobals
+var (
+	defaultMaxOpenConn = runtime.NumCPU() * 10
+)
 
 // nolint:mnd
 func Open(ctx context.Context, cfg Config, opts ...Option) (*Client, error) {
-	cli := &Client{}
-
-	for _, opt := range opts {
-		opt(cli)
-	}
-
-	if cfg.Schema != "public" && cfg.Schema != "" {
-		err := createSchema(ctx, cfg, cli.queryTracers)
-		if err != nil {
-			return nil, errors.WithMessage(err, "create schema")
-		}
-	}
-
-	dbCli, err := open(ctx, cfg.ConnStr(), cli.queryTracers)
+	dbCli, err := open(ctx, cfg.ConnStr(), opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "open db")
 	}
@@ -56,8 +48,28 @@ func Open(ctx context.Context, cfg Config, opts ...Option) (*Client, error) {
 	dbCli.SetConnMaxIdleTime(90 * time.Second)
 	dbCli.MapperFunc(cases.ToSnakeCase)
 
-	if cli.migrationRunner != nil {
-		err = cli.migrationRunner.Run(ctx, dbCli.DB.DB)
+	isReadOnly, err := dbCli.IsReadOnly(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "check is read only connection")
+	}
+
+	isCustomSchema := cfg.Schema != "public" && cfg.Schema != ""
+	if !isReadOnly && dbCli.createSchema && isCustomSchema {
+		_, err = dbCli.Exec(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", cfg.Schema))
+		if err != nil {
+			return nil, errors.WithMessage(err, "exec create schema query")
+		}
+	}
+
+	if isCustomSchema {
+		err = dbCli.checkSchemaExistence(ctx, cfg.Schema)
+		if err != nil {
+			return nil, errors.WithMessage(err, "check schema existence")
+		}
+	}
+
+	if !isReadOnly && dbCli.migrationRunner != nil {
+		err = dbCli.migrationRunner.Run(ctx, dbCli.DB.DB)
 		if err != nil {
 			return nil, errors.WithMessage(err, "migration run")
 		}
@@ -115,32 +127,27 @@ func (db *Client) ExecNamed(ctx context.Context, query string, arg any) (sql.Res
 	return db.NamedExecContext(ctx, query, arg)
 }
 
-func createSchema(ctx context.Context, cfg Config, queryTracers tracers) error {
-	dbCli, err := open(ctx, cfg.ConnStr(), queryTracers)
+func (db *Client) IsReadOnly(ctx context.Context) (bool, error) {
+	var isReadOnly string
+	err := db.QueryRowContext(ctx, "SHOW transaction_read_only").Scan(&isReadOnly)
 	if err != nil {
-		return errors.WithMessage(err, "open db")
+		return false, err
 	}
-
-	_, err = dbCli.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", cfg.Schema))
-	if err != nil {
-		return errors.WithMessage(err, "exec query")
-	}
-
-	err = dbCli.Close()
-	if err != nil {
-		return errors.WithMessage(err, "close db")
-	}
-	return nil
+	return isReadOnly == "on", nil
 }
 
-func open(ctx context.Context, connStr string, queryTracers tracers) (*Client, error) {
+func open(ctx context.Context, connStr string, opts ...Option) (*Client, error) {
 	db := &Client{}
+
+	for _, opt := range opts {
+		opt(db)
+	}
 
 	cfg, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, errors.WithMessage(err, "parse config")
 	}
-	cfg.Tracer = queryTracers
+	cfg.Tracer = db.queryTracers
 
 	sqlDb := stdlib.OpenDB(*cfg)
 
@@ -153,4 +160,19 @@ func open(ctx context.Context, connStr string, queryTracers tracers) (*Client, e
 
 	db.DB = pgDb
 	return db, nil
+}
+
+func (db *Client) checkSchemaExistence(ctx context.Context, schema string) error {
+	query := `SELECT EXISTS (
+		SELECT 1 FROM pg_namespace WHERE nspname = $1
+	)`
+	var exists bool
+	err := db.QueryRowContext(ctx, query, schema).Scan(&exists)
+	if err != nil {
+		return errors.WithMessage(err, "check schema existence")
+	}
+	if !exists {
+		return errors.Errorf("schema '%s' does not exist", schema)
+	}
+	return nil
 }

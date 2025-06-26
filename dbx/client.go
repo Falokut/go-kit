@@ -45,9 +45,21 @@ func (c *Client) Upgrade(ctx context.Context, config db.Config) error {
 
 	c.logger.Debug(ctx, "db client: initialization began")
 
-	newCli, err := db.Open(ctx, config, c.options...)
+	opts := append([]db.Option{
+		db.WithCreateSchema(true),
+	}, c.options...)
+
+	newCli, err := db.Open(ctx, config, opts...)
 	if err != nil {
 		return errors.WithMessage(err, "open new client")
+	}
+
+	readOnly, err := newCli.IsReadOnly(ctx)
+	if err != nil {
+		return errors.WithMessage(err, "check is new cli read only")
+	}
+	if readOnly {
+		c.logger.Info(ctx, "db client: connection is in read-only mode")
 	}
 
 	oldCli := c.cli.Swap(newCli)
