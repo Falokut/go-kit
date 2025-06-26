@@ -31,9 +31,10 @@ func derefPointer(field reflect.Value) reflect.Value {
 	return field
 }
 
-func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
+// nolint:exhaustive,cyclop
+func setWithProperType(val string, structField reflect.Value) error {
 	structField = derefPointer(structField)
-	valueKind = structField.Kind()
+	valueKind := structField.Kind()
 
 	switch valueKind {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

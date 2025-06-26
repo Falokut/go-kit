@@ -7,14 +7,19 @@ import (
 	"github.com/Falokut/go-kit/utils/cases"
 )
 
+var (
+	ErrDestNilPtr       = errors.New("dest must be a non-nil pointer")
+	ErrDestNotStructPtr = errors.New("dest must point to a struct")
+)
+
 func getStructValue(dest any) (reflect.Value, error) {
 	v := reflect.ValueOf(dest)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
-		return reflect.Value{}, errors.New("dest must be a non-nil pointer")
+		return reflect.Value{}, ErrDestNilPtr
 	}
 	v = v.Elem()
 	if v.Kind() != reflect.Struct {
-		return reflect.Value{}, errors.New("dest must point to a struct")
+		return reflect.Value{}, ErrDestNotStructPtr
 	}
 	return v, nil
 }

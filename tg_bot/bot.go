@@ -74,6 +74,7 @@ func (bot *BotApi) SetApiEndpoint(apiEndpoint string) {
 }
 
 // MakeRequest makes a request to a specific endpoint with our token.
+// nolint:noctx
 func (bot *BotApi) MakeRequest(endpoint string, params Params) (*ApiResponse, error) {
 	bot.logger.Debug(bot.logCtx, "bot request", log.Any("endpoint", endpoint))
 
@@ -117,20 +118,8 @@ func (bot *BotApi) MakeRequest(endpoint string, params Params) (*ApiResponse, er
 	}
 }
 
-// decodeApiResponse decode http.Response.Body stream to APIResponse struct
-// for efficient memory usage
-func (bot *BotApi) decodeApiResponse(body io.Reader) (*ApiResponse, error) {
-	var resp ApiResponse
-	err := json.NewDecoder(body).Decode(&resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
-}
-
 // UploadFiles makes a request to the API with files.
-// nolint:gocognit,cyclop,funlen
+// nolint:gocognit,cyclop,funlen,noctx
 func (bot *BotApi) UploadFiles(endpoint string, params Params, files []RequestFile) (*ApiResponse, error) {
 	r, w := io.Pipe()
 	m := multipart.NewWriter(w)
@@ -537,4 +526,16 @@ func EscapeText(parseMode string, text string) string {
 		return ""
 	}
 	return replacer.Replace(text)
+}
+
+// decodeApiResponse decode http.Response.Body stream to APIResponse struct
+// for efficient memory usage
+func (bot *BotApi) decodeApiResponse(body io.Reader) (*ApiResponse, error) {
+	var resp ApiResponse
+	err := json.NewDecoder(body).Decode(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }

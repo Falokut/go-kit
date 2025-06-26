@@ -24,6 +24,7 @@ type structCacheKey struct {
 	tag string
 }
 
+// nolint:gochecknoglobals
 var (
 	structCacheMu sync.RWMutex
 	structCache   = make(map[structCacheKey]*structInfo)
@@ -47,8 +48,9 @@ func getStructInfo(t reflect.Type, tag string) *structInfo {
 		return info
 	}
 
-	var fields []fieldInfo
-	for i := 0; i < t.NumField(); i++ {
+	numFields := t.NumField()
+	fields := make([]fieldInfo, 0, numFields)
+	for i := range numFields {
 		field := t.Field(i)
 
 		if field.PkgPath != "" {

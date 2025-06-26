@@ -23,7 +23,12 @@ func (s *BindPathSuite) TestSimpleStructBinding() {
 		Name string `path:"name"`
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequestWithContext(
+		s.T().Context(),
+		http.MethodGet,
+		"/",
+		nil,
+	)
 	s.Require().NoError(err)
 
 	req = addPathParams(req, map[string]string{
@@ -48,7 +53,7 @@ func (s *BindPathSuite) TestEmbeddedStructBinding() {
 		Embedded *Embedded `path:"embedded"`
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequestWithContext(s.T().Context(), http.MethodGet, "/", nil)
 	s.Require().NoError(err)
 
 	req = addPathParams(req, map[string]string{
@@ -72,7 +77,7 @@ func (s *BindPathSuite) TestMissingParamsIgnored() {
 		B int `path:"b"`
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequestWithContext(s.T().Context(), http.MethodGet, "/", nil)
 	s.Require().NoError(err)
 
 	req = addPathParams(req, map[string]string{
@@ -93,7 +98,7 @@ func (s *BindPathSuite) TestInvalidConversionReturnsError() {
 		Num int `path:"num"`
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequestWithContext(s.T().Context(), http.MethodGet, "/", nil)
 	s.Require().NoError(err)
 
 	req = addPathParams(req, map[string]string{

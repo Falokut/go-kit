@@ -39,6 +39,7 @@ func BindData(valuesMap map[string][]string, dest any, tag string) error {
 
 // bindDataRecursive is the internal implementation for BindData.
 // It supports nested fields by accumulating a key prefix for structured input maps.
+// nolint:gocognit,cyclop,funlen,nestif
 func bindDataRecursive(valuesMap map[string][]string, dest any, tag, prefix string) error {
 	v, err := getStructValue(dest)
 	if err != nil {
@@ -133,7 +134,6 @@ func bindDataRecursive(valuesMap map[string][]string, dest any, tag, prefix stri
 				fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
 			}
 			fieldValue = fieldValue.Elem()
-			fieldKind = fieldValue.Kind()
 		}
 
 		// Handle slice creation and assignment
@@ -141,7 +141,7 @@ func bindDataRecursive(valuesMap map[string][]string, dest any, tag, prefix stri
 			numElems := len(values)
 			slice := reflect.MakeSlice(fi.fieldType, numElems, numElems)
 			for i := range values {
-				err := setWithProperType(fi.elemKind, values[i], slice.Index(i))
+				err := setWithProperType(values[i], slice.Index(i))
 				if err != nil {
 					return errors.WithMessagef(err, "set slice element %d of field %q", i, key)
 				}
@@ -151,7 +151,7 @@ func bindDataRecursive(valuesMap map[string][]string, dest any, tag, prefix stri
 		}
 
 		// Handle single value assignment
-		err = setWithProperType(fieldKind, values[0], fieldValue)
+		err = setWithProperType(values[0], fieldValue)
 		if err != nil {
 			return errors.WithMessagef(err, "set field %q", key)
 		}

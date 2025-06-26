@@ -62,27 +62,6 @@ func (w *clientWrapper) EmitJsonWithAck(ctx context.Context, event string, data 
 	return resp, nil
 }
 
-func (w *clientWrapper) emitWithAck(ctx context.Context, event string, data []byte) ([]byte, error) {
-	ctx = log.ToContext(ctx, log.String("event", event))
-	w.logger.Info(
-		ctx,
-		"send event",
-		log.ByteString("data", hideSecrets(event, data)),
-	)
-
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-
-	resp, err := w.cli.EmitWithAck(ctx, event, data)
-	if err != nil {
-		w.logger.Error(ctx, "error", log.Any("error", err))
-		return resp, err
-	}
-
-	w.logger.Info(ctx, "event acknowledged", log.ByteString("response", resp))
-	return resp, err
-}
-
 func (w *clientWrapper) RegisterEvent(event string, handler func([]byte) error) {
 	future := eventFuture{
 		errorCh:    make(chan error, 1),
@@ -151,6 +130,27 @@ func (w *clientWrapper) on(event string, handler func(data []byte)) {
 		handler(msg.Data)
 		return nil
 	}))
+}
+
+func (w *clientWrapper) emitWithAck(ctx context.Context, event string, data []byte) ([]byte, error) {
+	ctx = log.ToContext(ctx, log.String("event", event))
+	w.logger.Info(
+		ctx,
+		"send event",
+		log.ByteString("data", hideSecrets(event, data)),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	resp, err := w.cli.EmitWithAck(ctx, event, data)
+	if err != nil {
+		w.logger.Error(ctx, "error", log.Any("error", err))
+		return resp, err
+	}
+
+	w.logger.Info(ctx, "event acknowledged", log.ByteString("response", resp))
+	return resp, err
 }
 
 func sendNonBlocking[T any](ch chan T, data T) {

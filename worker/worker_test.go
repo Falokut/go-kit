@@ -23,7 +23,7 @@ func TestWorker_Run(t *testing.T) {
 
 	job := &job{}
 	w := worker.New(job, worker.WithInterval(10*time.Second))
-	w.Run(context.Background())
+	w.Run(t.Context())
 	time.Sleep(1 * time.Second)
 	require.EqualValues(t, 1, atomic.LoadInt32(&job.call))
 	w.Shutdown()

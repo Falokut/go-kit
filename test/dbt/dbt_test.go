@@ -1,7 +1,6 @@
 package dbt_test
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"testing"
@@ -35,7 +34,7 @@ func TestDatabaseConnections(t *testing.T) {
 				_, err := db.DB()
 				require.NoError(t, err)
 
-				db.Must().ExecContext(context.Background(), "SELECT 1")
+				db.Must().ExecContext(t.Context(), "SELECT 1")
 				time.Sleep(100 * time.Millisecond)
 			},
 		)
@@ -54,7 +53,7 @@ func TestMaxConnections(t *testing.T) {
 
 			_, err := db.DB()
 			require.NoError(t, err)
-			db.Must().ExecContext(context.Background(), "SELECT 1")
+			db.Must().ExecContext(t.Context(), "SELECT 1")
 		})
 	}
 }

@@ -57,7 +57,7 @@ func (s *RequestBinderSuite) Test_Bind_GET_Success() {
 	val, err := s.binder.Bind(s.T().Context(),
 		"application/json", req, reflect.TypeOf(testStruct{}))
 
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.Equal("123", val.FieldByName("Id").String())
 	s.Equal("John", val.FieldByName("Name").String())
 	s.Equal(30, int(val.FieldByName("Age").Int()))
@@ -74,11 +74,11 @@ func (s *RequestBinderSuite) Test_Bind_ValidationError() {
 
 	_, err := s.binder.Bind(s.T().Context(), "application/json", req, reflect.TypeOf(testStruct{}))
 
-	s.Error(err)
-	be, ok := err.(apierrors.Error)
-	s.True(ok)
-	s.Equal(http.StatusBadRequest, be.HttpStatusCode())
-	s.Contains(be.Error(), "validation errors")
+	s.Require().Error(err)
+	apiErr := apierrors.Error{}
+	s.Require().ErrorAs(err, &apiErr)
+	s.Equal(http.StatusBadRequest, apiErr.HttpStatusCode())
+	s.Contains(apiErr.Error(), "validation errors")
 }
 
 func addPathParams(r *http.Request, params map[string]string) *http.Request {

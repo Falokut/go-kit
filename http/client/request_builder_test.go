@@ -25,7 +25,7 @@ func (s *RequestBuilderSuite) Test_GetRequestUrl_HasBaseUrl() {
 	builder := client.NewRequestBuilder(http.MethodGet, "/my_url/method", cfg, executeStub)
 
 	actualUrl, err := builder.GetRequestUrl()
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	const expectedUrl = "https://domain:80/my_url/method"
 	s.Equal(expectedUrl, actualUrl)
@@ -36,7 +36,7 @@ func (s *RequestBuilderSuite) Test_GetRequestUrl_WithoutBaseUrl() {
 	builder := client.NewRequestBuilder(http.MethodGet, "https://domain:443/my_url/method", cfg, executeStub)
 
 	actualUrl, err := builder.GetRequestUrl()
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	const expectedUrl = "https://domain:443/my_url/method"
 	s.Equal(expectedUrl, actualUrl)
@@ -48,7 +48,7 @@ func (s *RequestBuilderSuite) Test_GetRequestUrl_EmptyUrls_ReturnsError() {
 
 	url, err := builder.GetRequestUrl()
 	s.Empty(url)
-	s.Error(err)
+	s.Require().Error(err)
 	s.ErrorIs(err, client.ErrEmptyRequestUrl)
 }
 
@@ -81,7 +81,7 @@ func (s *RequestBuilderSuite) Test_GetRequestUrl_BaseUrlWithTrailingSlash() {
 	builder := client.NewRequestBuilder(http.MethodGet, "method", cfg, executeStub)
 
 	url, err := builder.GetRequestUrl()
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.Equal("https://domain.com/api/method", url)
 }
 
@@ -93,10 +93,11 @@ func (s *RequestBuilderSuite) Test_GetRequestUrl_AbsoluteUrlIgnoresBaseUrl() {
 	builder := client.NewRequestBuilder(http.MethodGet, absUrl, cfg, executeStub)
 
 	url, err := builder.GetRequestUrl()
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.Equal(absUrl, url)
 }
 
+// nolint:nilnil
 func executeStub(ctx context.Context, req *client.RequestBuilder) (*client.Response, error) {
 	return nil, nil
 }

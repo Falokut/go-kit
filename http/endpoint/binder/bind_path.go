@@ -31,6 +31,7 @@ func BindPath(r *http.Request, dest any) error {
 }
 
 // bindStructFields binds values from path parameters into the struct value recursively.
+// nolint:gocognit,cyclop,nestif
 func bindStructFields(params router.Params, v reflect.Value) error {
 	t := v.Type()
 	info := getStructInfo(t, PathTag)
@@ -98,7 +99,7 @@ func bindStructFields(params router.Params, v reflect.Value) error {
 			continue
 		}
 
-		err = setWithProperType(fieldValue.Kind(), param, fieldValue)
+		err = setWithProperType(param, fieldValue)
 		if err != nil {
 			return errors.WithMessagef(err, "set field %q", fi.fieldName)
 		}

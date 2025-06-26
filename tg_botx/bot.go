@@ -138,6 +138,11 @@ func (bot *Bot) Serve(ctx context.Context) error {
 	}
 }
 
+func (bot *Bot) Shutdown() {
+	bot.logger.Debug(bot.logCtx, "bot stopping the update receiver routine")
+	close(bot.shutdownCh)
+}
+
 // processUpdates fetches and processes updates, retrying if needed.
 func (bot *Bot) processUpdates(
 	ctx context.Context,
@@ -248,9 +253,4 @@ func (bot *Bot) handleUpdateWithRetry(
 	}
 
 	return resp, NewRetryWithDelayError(err.Error())
-}
-
-func (bot *Bot) Shutdown() {
-	bot.logger.Debug(bot.logCtx, "bot stopping the update receiver routine")
-	close(bot.shutdownCh)
 }

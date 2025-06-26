@@ -50,7 +50,13 @@ func BenchmarkBindPath_Item(b *testing.B) {
 	}
 
 	var dest benchStruct
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequestWithContext(
+		b.Context(),
+		http.MethodGet,
+		"/",
+		nil,
+	)
+	require.NoError(b, err)
 	req = addPathParams(req, params)
 
 	b.ReportAllocs()
@@ -74,7 +80,12 @@ func BenchmarkRequestBinder_Bind(b *testing.B) {
 		"code": "abc123",
 	}
 
-	req, err := http.NewRequest("GET", "/?query=hello", nil)
+	req, err := http.NewRequestWithContext(
+		b.Context(),
+		http.MethodGet,
+		"/?query=hello",
+		nil,
+	)
 	require.NoError(b, err)
 	req = addPathParams(req, params)
 	rb := binder.NewRequestBinder(&stubValidator{ok: true})

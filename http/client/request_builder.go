@@ -154,20 +154,6 @@ func (b *RequestBuilder) DoAndReadBody(ctx context.Context) ([]byte, int, error)
 	return body, resp.StatusCode(), nil
 }
 
-func (b *RequestBuilder) newHttpRequest(ctx context.Context) (*http.Request, error) {
-	finalUrl, err := b.GetRequestUrl()
-	if err != nil {
-		return nil, err
-	}
-
-	request, err := http.NewRequestWithContext(ctx, b.method, finalUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return request, nil
-}
-
 func (b *RequestBuilder) GetRequestUrl() (string, error) {
 	var finalUrl string
 
@@ -193,4 +179,18 @@ func (b *RequestBuilder) GetRequestUrl() (string, error) {
 	}
 
 	return finalUrl, nil
+}
+
+func (b *RequestBuilder) newHttpRequest(ctx context.Context) (*http.Request, error) {
+	finalUrl, err := b.GetRequestUrl()
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequestWithContext(ctx, b.method, finalUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return request, nil
 }

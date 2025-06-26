@@ -89,7 +89,7 @@ func (s *BindDataSuite) TestInvalidIntConversion() {
 	var ts TestStruct
 	err := binder.BindData(values, &ts, binder.FormTag)
 
-	s.Error(err)
+	s.Require().Error(err)
 	s.Contains(err.Error(), "unmarshal field")
 }
 

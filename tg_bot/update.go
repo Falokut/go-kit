@@ -42,7 +42,7 @@ func (UpdatesConfig) method() string {
 	return "getUpdates"
 }
 
-// nolint:errcheck
+// nolint:errcheck,unparam
 func (config UpdatesConfig) params() (Params, error) {
 	params := make(Params)
 

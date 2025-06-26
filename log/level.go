@@ -118,6 +118,11 @@ func (l *Level) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// Set sets the level for the flag.Value interface.
+func (l *Level) Set(s string) error {
+	return l.UnmarshalText([]byte(s))
+}
+
 func (l *Level) unmarshalText(text []byte) bool {
 	lvl, err := ParseLogLevel(string(text))
 	if err != nil {
@@ -125,9 +130,4 @@ func (l *Level) unmarshalText(text []byte) bool {
 	}
 	*l = lvl
 	return true
-}
-
-// Set sets the level for the flag.Value interface.
-func (l *Level) Set(s string) error {
-	return l.UnmarshalText([]byte(s))
 }
