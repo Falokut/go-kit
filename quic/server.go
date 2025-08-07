@@ -32,6 +32,8 @@ type Server struct {
 
 	middlewares []Middleware
 	listener    atomic.Pointer[quicLib.Listener]
+
+	cancel context.CancelFunc
 }
 
 func NewServer(opts ...Option) *Server {
@@ -69,6 +71,7 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	if s.tlsConfig == nil {
 		return errors.New("TLS config must be set") // nolint:err113
 	}
+	ctx, s.cancel = context.WithCancel(ctx)
 
 	listener, err := quicLib.ListenAddr(addr, s.tlsConfig, s.quicConfig)
 	if err != nil {
@@ -94,22 +97,38 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if listener != nil {
 		return listener.Close()
 	}
+	if s.cancel != nil {
+		s.cancel()
+	}
 	return nil
 }
 
 func (s *service) handleConnection(ctx context.Context, conn *quicLib.Conn) {
+	defer func() {
+		_ = conn.CloseWithError(0, "connection closed")
+	}()
+
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		stream, err := conn.AcceptStream(ctx)
 		if err != nil {
 			return
 		}
+
 		handler, ok := s.delegate.Load().(StreamHandler)
 		if !ok || handler == nil {
-			stream.Close()
+			_ = stream.Close()
 			continue
 		}
-		go func() {
-			_ = handler.HandleStream(stream.Context(), wrapStream(stream))
-		}()
+
+		go func(s *quicLib.Stream) {
+			defer s.Close()
+			_ = handler.HandleStream(s.Context(), wrapStream(s))
+		}(stream)
 	}
 }
