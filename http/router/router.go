@@ -9,6 +9,8 @@ import (
 
 type Params = httprouter.Params
 
+type ctxKeyRoutePattern struct{}
+
 type Router struct {
 	router *httprouter.Router
 }
@@ -36,7 +38,12 @@ func (r *Router) DELETE(path string, handler http.Handler) *Router {
 }
 
 func (r *Router) Handler(method string, path string, handler http.Handler) *Router {
-	r.router.Handler(method, path, handler)
+	// Оборачиваем handler, чтобы сохранить route pattern в context
+	wrapped := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := context.WithValue(req.Context(), ctxKeyRoutePattern{}, path)
+		handler.ServeHTTP(w, req.WithContext(ctx))
+	})
+	r.router.Handler(method, path, wrapped)
 	return r
 }
 
@@ -54,4 +61,13 @@ func ParamsFromRequest(http *http.Request) Params {
 
 func ParamsFromContext(ctx context.Context) Params {
 	return httprouter.ParamsFromContext(ctx)
+}
+
+func RouteFromRequest(r *http.Request) string {
+	return RouteFromContext(r.Context())
+}
+
+func RouteFromContext(ctx context.Context) string {
+	route, _ := ctx.Value(ctxKeyRoutePattern{}).(string)
+	return route
 }

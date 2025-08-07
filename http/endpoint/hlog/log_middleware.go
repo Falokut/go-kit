@@ -29,6 +29,7 @@ import (
 	http2 "github.com/Falokut/go-kit/http"
 	"github.com/Falokut/go-kit/http/endpoint"
 	"github.com/Falokut/go-kit/http/endpoint/buffer"
+	"github.com/Falokut/go-kit/http/router"
 	"github.com/Falokut/go-kit/log"
 	"github.com/pkg/errors"
 )
@@ -87,7 +88,9 @@ func middleware(logger log.Logger, cfg *logConfig) endpoint.LogMiddleware {
 			requestLogFields := []log.Field{
 				log.String("method", r.Method),
 				log.String("url", r.URL.String()),
+				log.String("route", router.RouteFromContext(ctx)),
 			}
+
 			requestContentType := r.Header.Get("Content-Type")
 			if cfg.logRequestBody && matchContentType(requestContentType, cfg.logBodyContentTypes) {
 				err := buf.ReadRequestBody(r.Body)
