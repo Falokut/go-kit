@@ -1,3 +1,5 @@
+## v1.9.2
+* Переименован метод `HealthCheck` в `Healthcheck` в модуле `miniox` у структуры `Client`
 ## v1.9.1
 * Добавлен `route` в http логи
 ## v1.9.0
