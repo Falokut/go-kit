@@ -66,7 +66,7 @@ func (c *Client) Upgrade(ctx context.Context, cfg Config, opts ...Option) error 
 	return nil
 }
 
-func (c *Client) HealthCheck(_ context.Context) error {
+func (c *Client) Healthcheck(_ context.Context) error {
 	cli, err := c.Client()
 	if err != nil {
 		return errors.WithMessage(err, "get client")
