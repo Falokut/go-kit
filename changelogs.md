@@ -1,3 +1,5 @@
+## v1.9.3
+* Обновлена реализация `http/types.file_data`
 ## v1.9.2
 * Переименован метод `HealthCheck` в `Healthcheck` в модуле `miniox` у структуры `Client`
 ## v1.9.1
