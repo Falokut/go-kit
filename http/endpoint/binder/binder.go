@@ -51,16 +51,14 @@ func (b *RequestBinder) Bind(
 	r *http.Request,
 	destType reflect.Type,
 ) (reflect.Value, error) {
-	method := r.Method
 	dest := reflect.New(destType)
-	if method == http.MethodGet || method == http.MethodDelete || method == http.MethodHead {
-		err := bindQuery(r, dest)
-		if err != nil {
-			return reflect.Value{},
-				apierrors.NewBusinessError(http.StatusBadRequest, "invalid request query", err)
-		}
+	err := BindData(r.URL.Query(), dest.Interface(), QueryTag)
+	if err != nil {
+		return reflect.Value{},
+			apierrors.NewBusinessError(http.StatusBadRequest, "invalid request query", err)
 	}
-	err := BindPath(r, dest.Interface())
+
+	err = BindPath(r, dest.Interface())
 	if err != nil {
 		return reflect.Value{},
 			apierrors.NewBusinessError(http.StatusBadRequest, "invalid path params", err)
@@ -89,7 +87,7 @@ func (b *RequestBinder) Bind(
  * It supports binding for form data, JSON, and XML content types.
  *
  * Parameters:
- * - ctype: the content type of the request
+ * - contentType: the content type of the request
  * - r: the http.Request object
  * - dest: the reflect.Value destination to bind the request body to
  *
@@ -104,9 +102,9 @@ func (b *RequestBinder) BindBody(
 	switch {
 	case strings.HasPrefix(contentType, MIMEApplicationForm),
 		strings.HasPrefix(contentType, MIMEMultipartForm):
-		err = bindForm(r, dest)
+		err = BindData(r.Form, dest.Interface(), FormTag)
 	case strings.HasPrefix(contentType, MIMEApplicationJSON):
-		err = bindJson(r.Body, dest)
+		err = json.NewDecoder(r.Body).Decode(dest.Interface())
 	case strings.HasPrefix(contentType, MIMEApplicationXML),
 		strings.HasPrefix(contentType, MIMETextXML):
 		err = bindXml(r.Body, dest)
@@ -133,10 +131,6 @@ func formatDetails(details map[string]string) map[string]any {
 	return result
 }
 
-func bindJson(reader io.Reader, dest reflect.Value) error {
-	return json.NewDecoder(reader).Decode(dest.Interface())
-}
-
 func bindXml(reader io.Reader, dest reflect.Value) error {
 	err := xml.NewDecoder(reader).Decode(dest.Interface())
 
@@ -154,12 +148,4 @@ func bindXml(reader io.Reader, dest reflect.Value) error {
 	default:
 		return nil
 	}
-}
-
-func bindForm(r *http.Request, dest reflect.Value) error {
-	return BindData(r.Form, dest.Interface(), FormTag)
-}
-
-func bindQuery(r *http.Request, dest reflect.Value) error {
-	return BindData(r.URL.Query(), dest.Interface(), QueryTag)
 }
