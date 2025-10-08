@@ -15,6 +15,7 @@ type PartialDataInfo struct {
 
 type FileData struct {
 	PartialDataInfo *PartialDataInfo
+	PrettyName      string
 	ContentType     string
 	TotalFileSize   int64
 	ContentReader   io.ReadSeekCloser
@@ -77,4 +78,7 @@ func (file *FileData) writePartialData(w http.ResponseWriter) error {
 // setHeaders устанавливает основные HTTP-заголовки для файла.
 func (file *FileData) setHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", file.ContentType)
+	if file.PrettyName != "" {
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`filename="%s"`, file.PrettyName))
+	}
 }
